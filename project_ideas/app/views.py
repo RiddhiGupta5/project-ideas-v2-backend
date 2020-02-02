@@ -157,3 +157,39 @@ class VoteView(APIView):
             vote.save()
             idea_serializer = IdeaSerializer(idea)
             return Response({"message":"Voted Successfully", "idea":idea_serializer.data}, status=status.HTTP_200_OK)
+
+
+class CommentView(APIView):
+
+    def get(self, request, pk):
+        comments = list(Comment.objects.filter(idea_id=pk))
+        response = []
+        if len(comments)==0:
+            return Response({"message":"There are no comments"}, status=status.HTTP_204_NO_CONTENT)
+        else:
+            comments = list(Comment.objects.filter(parent_comment_id=None, idea_id=pk))
+            serializer = CommentSerializer(comments, many=True)
+            response = serializer.data
+            for resp in response:
+                resp['child_comments'] = None
+                child_comments = list(Comment.objects.filter(parent_comment_id=resp['id'], idea_id=pk))
+                child_comment_serializer = CommentSerializer(child_comments, many=True)
+                resp['child_comments'] = child_comment_serializer.data
+        
+            return Response({"message":response}, status=status.HTTP_200_OK)
+
+
+    def post(self, request):
+        request.data['user_id'] = request.user.id
+        
+        try:
+            idea = Idea.objects.get(id=(request.data)['idea_id'], is_reviewed=1)
+        except:
+            return Response({"message":"Invalid Idea Id"}, status=status.HTTP_400_BAD_REQUEST) 
+            
+        comment = CommentSerializer(data=request.data)        
+        if comment.is_valid():
+            comment.save()
+            return Response({"message":comment.data}, status=status.HTTP_200_OK)
+        else:
+            return Response({"message":comment.errors}, status=status.HTTP_400_BAD_REQUEST)

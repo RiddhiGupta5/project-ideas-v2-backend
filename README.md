@@ -1,7 +1,7 @@
 <p align="center">
 	<img src="https://user-images.githubusercontent.com/30529572/72455010-fb38d400-37e7-11ea-9c1e-8cdeb5f5906e.png" />
-	<h2 align="center"> < Insert Project Title Here > </h2>
-	<h4 align="center"> < Insert Project Description Here > <h4>
+	<h2 align="center"> Project Ideas </h2>
+	<h4 align="center"> Platform to Post new Ideas and Discuss about them <h4>
 </p>
 
 ---
@@ -10,10 +10,12 @@
 
 
 ## Functionalities
-- [ ]  < insert functionality >
-- [ ]  < insert functionality >
-- [ ]  < insert functionality >
-- [ ]  < insert functionality >
+- [x]  Open Authorization using Google and Facebook
+- [x]  Post New Ideas (Without Authentication)
+- [x]  View All Published Ideas
+- [ ]  Comment on Posted Ideas (Thread Based)
+- [ ]  Upvote or Downvote the Idea
+- [ ]  Admins can View the ideas and Publish or Reject them
 
 <br>
 
@@ -21,26 +23,35 @@
 ## Instructions to run
 
 * Pre-requisites:
-	-  < insert pre-requisite >
-	-  < insert pre-requisite >
+	-  Python3
 
-* < directions to install > 
-```bash
-< insert code >
-```
+* Directions to install
+	- Setting up a virtual env 
+	```bash
+	virtualenv env
+	env\\Scripts\\activate
+	```
+	- Installing Packages
+	```bash
+	pip install -r requirements.txt
+	```
+	- Making mgrations
+	```bash
+	python manage.py makemigrations
+	python manage.py migrate
+	````
 
-* < directions to execute >
+* Run the server
 
-```bash
-< insert code >
-```
+	```bash
+	python manage.py runserver 3000
+	```
 
 <br>
 
 ## Contributors
 
-* [ < INSERT NAME HERE > ](INSERT_PROFILE_URL_HERE)
-* [ < INSERT NAME HERE > ](INSERT_PROFILE_URL_HERE)
+* [ RiddhiGupta5 ](https://github.com/RiddhiGupta5)
 
 
 

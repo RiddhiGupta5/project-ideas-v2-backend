@@ -1,7 +1,7 @@
 <p align="center">
 	<img src="https://user-images.githubusercontent.com/30529572/72455010-fb38d400-37e7-11ea-9c1e-8cdeb5f5906e.png" />
 	<h2 align="center"> Project Ideas </h2>
-	<h4 align="center"> Platform to Post new Ideas and Discuss about them <h4>
+	<h4 align="center"> Platform to Post New Ideas and Discuss about them <h4>
 </p>
 
 ---

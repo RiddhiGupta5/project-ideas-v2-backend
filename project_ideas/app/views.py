@@ -24,7 +24,8 @@ from .serializers import (
 from .models import (
     Idea,
     Comment,
-    User
+    User,
+    Vote
 )
 
 
@@ -120,3 +121,39 @@ class ViewIdea(APIView):
             return Response({"message":serializer.data}, status=status.HTTP_200_OK)
         except Idea.DoesNotExist:
             return Response({"message":"Idea not found or Invalid id number"}, status=status.HTTP_204_NO_CONTENT)
+
+
+class VoteView(APIView):
+
+    def post(self, request):
+        req_data = request.data
+        user = request.user
+        try:
+            idea = Idea.objects.get(id=req_data["idea_id"])
+        except Idea.DoesNotExist:
+            return Response({"message":"Invalid Idea Id"}, status=status.HTTP_400_BAD_REQUEST)
+        if idea.is_reviewed==0 or idea.is_reviewed==2:
+            return Response({"message":"Idea cannot be voted"}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            vote = Vote.objects.get(user_id=user.id, idea_id=req_data["idea_id"])
+            if vote.vote_type==1 and int(req_data['vote_type'])==1:
+                return Response({"message":"User has already Voted"}, status=status.HTTP_400_BAD_REQUEST)
+            elif vote.vote_type==-1 and int(req_data['vote_type'])==-1:
+                return Response({"message":"User has already Voted"}, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                idea.votes = idea.votes + int(req_data['vote_type'])
+                idea.save()
+                vote.vote_type = req_data["vote_type"]
+                vote.save()
+                idea_serializer = IdeaSerializer(idea)
+                return Response({"message":"Voted Successfully", "idea":idea_serializer.data}, status=status.HTTP_200_OK)
+        except Vote.DoesNotExist:
+            idea.votes = idea.votes + int(req_data['vote_type'])
+            idea.save()
+            vote = Vote()
+            vote.user_id = user
+            vote.idea_id = idea
+            vote.vote_type = req_data["vote_type"]
+            vote.save()
+            idea_serializer = IdeaSerializer(idea)
+            return Response({"message":"Voted Successfully", "idea":idea_serializer.data}, status=status.HTTP_200_OK)

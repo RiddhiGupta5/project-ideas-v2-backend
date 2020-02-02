@@ -5,6 +5,8 @@ from .views import (
     SocialLogoutView,
     PublishedIdeasView,
     ViewIdea,
+    VoteView,
+    CommentView,
 )
 from rest_framework import routers
 
@@ -17,4 +19,6 @@ urlpatterns = [
     path("view_idea/<int:pk>/", ViewIdea.as_view()),
     path("login/", SocialLoginView.as_view()),
     path("logout/", SocialLogoutView.as_view()),
+    path("vote/", VoteView.as_view()),
+    path("comment/", CommentView.as_view()),
 ]

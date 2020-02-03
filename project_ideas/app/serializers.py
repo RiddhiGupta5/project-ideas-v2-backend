@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Admin, User, Idea, Comment
+from app.models import User, Idea, Comment
 
 class SocialSerializer(serializers.Serializer):
     """
@@ -8,15 +8,10 @@ class SocialSerializer(serializers.Serializer):
     provider = serializers.CharField(max_length=255, required=True)
     access_token = serializers.CharField(max_length=4096, required=True, trim_whitespace=True)
 
-class AdminSignupSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Admin
-        fields = "__all__"
-
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = "__all__"
+        fields = ('email', 'password')
 
 class IdeaSerializer(serializers.ModelSerializer):
     class Meta:

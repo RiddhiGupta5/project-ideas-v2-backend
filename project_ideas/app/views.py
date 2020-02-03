@@ -10,29 +10,29 @@ from social_django.utils import load_strategy, load_backend
 from social_core.exceptions import MissingBackend, AuthTokenError, AuthForbidden
 from social_core.backends.oauth import BaseOAuth2
 
-from requests.exceptions import HTTPError
-from django.forms.models import model_to_dict
-
-from .serializers import (
-    SocialSerializer,
-    AdminSignupSerializer, 
-    UserSerializer, 
-    IdeaSerializer,
-    CommentSerializer
+from app.serializers import (
+    SocialSerializer
 )
 
-from .models import (
-    Idea,
-    Comment,
-    User,
-    Vote
+from .models import User
+
+from .ideasView import (
+    PostIdeaView,
+    PublishedIdeasView,
+    ViewIdea,
 )
 
+from .voteAndCommentViews import (
+    VoteView,
+    CommentView,
+)
 
+# View for Social Login 
 class SocialLoginView(APIView):
     permission_classes = (AllowAny,)
 
     def post(self, request):
+        #Validating and getting data from request
         req_data = request.data
         serializer = SocialSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -50,7 +50,10 @@ class SocialLoginView(APIView):
         try:
             if isinstance(backend, BaseOAuth2):
                 access_token = req_data['access_token']
+
+            #Creating a new user by using google or facebook
             user = backend.do_auth(access_token)
+            print(user.id)
             authenticated_user = backend.do_auth(access_token, user=user)
         except Exception as error:
             return Response({
@@ -66,130 +69,22 @@ class SocialLoginView(APIView):
             token, _ = Token.objects.get_or_create(user=user)
             response = {
                 "id": user.id,
-                "email": authenticated_user.email,
-                "username": authenticated_user.username,                
+                "email": user.email,                
                 "token":token.key
             }
             return Response(status=status.HTTP_200_OK, data=response)
 
-
+# View for Social Logout
 class SocialLogoutView(APIView):
 
     def get(self, request, format=None):
+        # Get User and delete the token
         user = request.user
         response = {
             "message":"User logged out", 
             "Details":{
                 "id": user.id,
-                "username": user.username,
                 "email": user.email
             }}
         request.user.auth_token.delete()
         return Response(response, status=status.HTTP_200_OK)
-            
-
-class PostIdeaView(APIView):
-    permission_classes = (AllowAny,)
-
-    def post(self, request):
-        serializer = IdeaSerializer(data = request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response({"message":serializer.data}, status=status.HTTP_200_OK)
-        else:
-            return Response({"message": "Invalid Idea Posted"}, status=status.HTTP_400_BAD_REQUEST)
-
-
-class PublishedIdeasView(APIView):
-    permission_classes = (AllowAny,)
-
-    def get(self, request):
-        ideas = list(Idea.objects.filter(is_reviewed=1))
-        serializers = (IdeaSerializer(ideas, many=True))
-        if len(ideas) == 0:
-            return Response({"message":"No Published Ideas found"}, status=status.HTTP_204_NO_CONTENT)
-        return Response({"message":serializers.data}, status=status.HTTP_200_OK)
-
-
-class ViewIdea(APIView):
-    permission_classes = (AllowAny,)
-
-    def get(self, request, pk):
-        try:
-            idea = Idea.objects.get(id=pk)
-            serializer = IdeaSerializer(idea)
-            return Response({"message":serializer.data}, status=status.HTTP_200_OK)
-        except Idea.DoesNotExist:
-            return Response({"message":"Idea not found or Invalid id number"}, status=status.HTTP_204_NO_CONTENT)
-
-
-class VoteView(APIView):
-
-    def post(self, request):
-        req_data = request.data
-        user = request.user
-        try:
-            idea = Idea.objects.get(id=req_data["idea_id"])
-        except Idea.DoesNotExist:
-            return Response({"message":"Invalid Idea Id"}, status=status.HTTP_400_BAD_REQUEST)
-        if idea.is_reviewed==0 or idea.is_reviewed==2:
-            return Response({"message":"Idea cannot be voted"}, status=status.HTTP_400_BAD_REQUEST)
-        try:
-            vote = Vote.objects.get(user_id=user.id, idea_id=req_data["idea_id"])
-            if vote.vote_type==1 and int(req_data['vote_type'])==1:
-                return Response({"message":"User has already Voted"}, status=status.HTTP_400_BAD_REQUEST)
-            elif vote.vote_type==-1 and int(req_data['vote_type'])==-1:
-                return Response({"message":"User has already Voted"}, status=status.HTTP_400_BAD_REQUEST)
-            else:
-                idea.votes = idea.votes + int(req_data['vote_type'])
-                idea.save()
-                vote.vote_type = req_data["vote_type"]
-                vote.save()
-                idea_serializer = IdeaSerializer(idea)
-                return Response({"message":"Voted Successfully", "idea":idea_serializer.data}, status=status.HTTP_200_OK)
-        except Vote.DoesNotExist:
-            idea.votes = idea.votes + int(req_data['vote_type'])
-            idea.save()
-            vote = Vote()
-            vote.user_id = user
-            vote.idea_id = idea
-            vote.vote_type = req_data["vote_type"]
-            vote.save()
-            idea_serializer = IdeaSerializer(idea)
-            return Response({"message":"Voted Successfully", "idea":idea_serializer.data}, status=status.HTTP_200_OK)
-
-
-class CommentView(APIView):
-
-    def get(self, request, pk):
-        comments = list(Comment.objects.filter(idea_id=pk))
-        response = []
-        if len(comments)==0:
-            return Response({"message":"There are no comments"}, status=status.HTTP_204_NO_CONTENT)
-        else:
-            comments = list(Comment.objects.filter(parent_comment_id=None, idea_id=pk))
-            serializer = CommentSerializer(comments, many=True)
-            response = serializer.data
-            for resp in response:
-                resp['child_comments'] = None
-                child_comments = list(Comment.objects.filter(parent_comment_id=resp['id'], idea_id=pk))
-                child_comment_serializer = CommentSerializer(child_comments, many=True)
-                resp['child_comments'] = child_comment_serializer.data
-        
-            return Response({"message":response}, status=status.HTTP_200_OK)
-
-
-    def post(self, request):
-        request.data['user_id'] = request.user.id
-        
-        try:
-            idea = Idea.objects.get(id=(request.data)['idea_id'], is_reviewed=1)
-        except:
-            return Response({"message":"Invalid Idea Id"}, status=status.HTTP_400_BAD_REQUEST) 
-            
-        comment = CommentSerializer(data=request.data)        
-        if comment.is_valid():
-            comment.save()
-            return Response({"message":comment.data}, status=status.HTTP_200_OK)
-        else:
-            return Response({"message":comment.errors}, status=status.HTTP_400_BAD_REQUEST)

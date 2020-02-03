@@ -42,6 +42,7 @@ INSTALLED_APPS = [
 
     'rest_framework',
     'app',
+    'adminApp',
 
     'oauth2_provider',
     'social_django',
@@ -79,7 +80,7 @@ SOCIAL_AUTH_LOGIN_REDIRECT_URL = '/'
 SOCIAL_AUTH_FACEBOOK_SCOPE = ['email']
 SOCIAL_AUTH_FACEBOOK_PROFILE_EXTRA_PARAMS = {
 'fields': 'id, name, email' }
-FACEBOOK_EXTENDED_PERMISSIONS = ['email']
+FACEBOOK_EXTENDED_PERMISSIONS = ['email', 'name']
 SOCIAL_AUTH_ADMIN_USER_SEARCH_FIELDS = ['username', 'first_name', 'email']
 SOCIAL_AUTH_USERNAME_IS_FULL_EMAIL = True
 

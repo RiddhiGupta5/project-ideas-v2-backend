@@ -8,6 +8,8 @@ from rest_framework.permissions import AllowAny
 
 from django.contrib.auth import authenticate
 
+from fuzzywuzzy import fuzz
+
 import os
 from dotenv import load_dotenv
 
@@ -143,5 +145,28 @@ class AllIdeasView(APIView):
             return Response({"message":serializer.data}, status=status.HTTP_200_OK)
         else:
             return Response({"message":"Not an Admin"}, status=status.HTTP_403_FORBIDDEN)
+
+
+class SearchIdeaByContent(APIView):
+    permission_classes = (AllowAny,)
+
+    def get(self, request):
+
+        text = request.query_params.get("text", None)
+        print(text)
+
+        ideas = list(Idea.objects.all())
+
+        if not text:            
+            return Response({"message":"Please provide text"}, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            for idea in ideas:
+                response = []
+                token_set_ratio_title = fuzz.token_set_ratio(idea.project_title, text)
+                token_set_ratio_description = fuzz.token_set_ratio(idea.project_description, text)
+                if token_set_ratio_title > 60 or token_set_ratio_description > 60:
+                    serializer = IdeaSerializer(idea)
+                    response.append(serializer.data)
+            return Response({"message":response}, status=status.HTTP_200_OK)
             
 

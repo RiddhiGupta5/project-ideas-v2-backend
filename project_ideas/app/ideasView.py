@@ -5,8 +5,11 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import AllowAny
 
+from fuzzywuzzy import fuzz
+
 from app.serializers import ( 
-    IdeaSerializer
+    IdeaSerializer,
+    
 )
 
 from .models import (
@@ -48,3 +51,28 @@ class ViewIdea(APIView):
             return Response({"message":serializer.data}, status=status.HTTP_200_OK)
         except Idea.DoesNotExist:
             return Response({"message":"Idea not found or Invalid id number"}, status=status.HTTP_204_NO_CONTENT)
+
+class SearchIdeaByContent(APIView):
+    permission_classes = (AllowAny,)
+
+    def get(self, request):
+        keys = {"PENDING":0, "PUBLISHED":1, "REJECTED":2}
+        text = request.query_params.get("text", None)
+        ideas = list(Idea.objects.filter(is_reviewed=keys['PUBLISHED']))
+
+        print(text)
+
+        if not text:            
+            return Response({"message":"Please provide text"}, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            for idea in ideas:
+                response = []
+                token_set_ratio_title = fuzz.token_set_ratio(idea.project_title, text)
+                token_set_ratio_description = fuzz.token_set_ratio(idea.project_description, text)
+                if token_set_ratio_title > 60 or token_set_ratio_description > 60:
+                    serializer = IdeaSerializer(idea)
+                    response.append(serializer.data)
+            return Response({"message":response}, status=status.HTTP_200_OK)
+            
+        
+        

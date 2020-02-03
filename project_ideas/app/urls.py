@@ -7,6 +7,7 @@ from app.views import (
     ViewIdea,
     VoteView,
     CommentView,
+    SearchIdeaByContent,
 )
 from rest_framework import routers
 
@@ -22,4 +23,5 @@ urlpatterns = [
     path("vote/", VoteView.as_view()),
     path("comment/", CommentView.as_view()),
     path("comment/<int:pk>/", CommentView.as_view()),
+    path("search_ideas/", SearchIdeaByContent.as_view()),
 ]

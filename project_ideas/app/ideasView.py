@@ -59,6 +59,7 @@ class SearchIdeaByContent(APIView):
         keys = {"PENDING":0, "PUBLISHED":1, "REJECTED":2}
         text = request.query_params.get("text", None)
         ideas = list(Idea.objects.filter(is_reviewed=keys['PUBLISHED']))
+        response = []
 
         print(text)
 
@@ -66,7 +67,6 @@ class SearchIdeaByContent(APIView):
             return Response({"message":"Please provide text"}, status=status.HTTP_400_BAD_REQUEST)
         else:
             for idea in ideas:
-                response = []
                 token_set_ratio_title = fuzz.token_set_ratio(idea.project_title, text)
                 token_set_ratio_description = fuzz.token_set_ratio(idea.project_description, text)
                 if token_set_ratio_title > 60 or token_set_ratio_description > 60:

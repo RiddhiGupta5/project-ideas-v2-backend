@@ -147,21 +147,19 @@ class AllIdeasView(APIView):
             return Response({"message":"Not an Admin"}, status=status.HTTP_403_FORBIDDEN)
 
 
-class SearchIdeaByContent(APIView):
-    permission_classes = (AllowAny,)
+class SearchAllIdeaByContent(APIView):
 
     def get(self, request):
 
         text = request.query_params.get("text", None)
-        print(text)
+        response = []
 
         ideas = list(Idea.objects.all())
 
         if not text:            
             return Response({"message":"Please provide text"}, status=status.HTTP_400_BAD_REQUEST)
         else:
-            for idea in ideas:
-                response = []
+            for idea in ideas:                
                 token_set_ratio_title = fuzz.token_set_ratio(idea.project_title, text)
                 token_set_ratio_description = fuzz.token_set_ratio(idea.project_description, text)
                 if token_set_ratio_title > 60 or token_set_ratio_description > 60:

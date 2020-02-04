@@ -6,6 +6,7 @@ from adminApp.views import (
     UnpublishedIdeas,
     RejectedIdeasView,
     AllIdeasView,
+    SearchAllIdeaByContent,
 )
 from rest_framework import routers
 
@@ -19,4 +20,5 @@ urlpatterns = [
     path("unpublished_ideas/", UnpublishedIdeas.as_view()),
     path("rejected_ideas/", RejectedIdeasView.as_view()),
     path("all_ideas/", AllIdeasView.as_view()),
+    path("search_all_ideas/", SearchAllIdeaByContent.as_view()),
 ]

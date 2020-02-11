@@ -7,6 +7,8 @@ from rest_framework.permissions import AllowAny
 
 from fuzzywuzzy import fuzz
 
+from django.db.models import Q
+
 from app.serializers import ( 
     IdeaSerializer,
     

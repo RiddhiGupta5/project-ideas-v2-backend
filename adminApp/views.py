@@ -8,8 +8,6 @@ from rest_framework.permissions import AllowAny
 
 from django.contrib.auth import authenticate
 
-from fuzzywuzzy import fuzz
-
 from django.db.models import Q
 
 import os

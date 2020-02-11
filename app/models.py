@@ -8,6 +8,7 @@ from .managers import CustomUserManager
 
 
 class User(AbstractBaseUser, PermissionsMixin):
+    username = models.CharField(null=True, max_length=50)
     email = models.EmailField(_('email address'), unique=True)
     is_staff = models.BooleanField(default=False)       # Field necessary for a django user
     is_active = models.BooleanField(default=True)       # Field necessary for a django user

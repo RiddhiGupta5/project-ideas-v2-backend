@@ -58,21 +58,19 @@ class SearchIdeaByContent(APIView):
     def get(self, request):
         keys = {"PENDING":0, "PUBLISHED":1, "REJECTED":2}
         text = request.query_params.get("text", None)
-        ideas = list(Idea.objects.filter(is_reviewed=keys['PUBLISHED']))
-        response = []
-
         print(text)
+        all_ideas = list(Idea.objects.filter(
+            Q(is_reviewed=keys['PUBLISHED']) & 
+            (Q(project_title__icontains=text) | Q(project_description__icontains=text))).all())
+        search_result = all_ideas
+        
+        if len(search_result)==0:
+            return Response({"message":"No Idea found"}, status=204)
 
-        if not text:            
-            return Response({"message":"Please provide text"}, status=status.HTTP_400_BAD_REQUEST)
-        else:
-            for idea in ideas:
-                token_set_ratio_title = fuzz.token_set_ratio(idea.project_title, text)
-                token_set_ratio_description = fuzz.token_set_ratio(idea.project_description, text)
-                if token_set_ratio_title > 60 or token_set_ratio_description > 60:
-                    serializer = IdeaSerializer(idea)
-                    response.append(serializer.data)
-            return Response({"message":response}, status=status.HTTP_200_OK)
+        serializer = IdeaSerializer(search_result, many=True)
+        serializer_data = serializer.data
+
+        return Response({"message":serializer_data}, status=status.HTTP_200_OK)
             
         
         

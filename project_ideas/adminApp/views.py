@@ -10,6 +10,8 @@ from django.contrib.auth import authenticate
 
 from fuzzywuzzy import fuzz
 
+from django.db.models import Q
+
 import os
 from dotenv import load_dotenv
 
@@ -152,19 +154,16 @@ class SearchAllIdeaByContent(APIView):
     def get(self, request):
 
         text = request.query_params.get("text", None)
-        response = []
+        print(text)
+        all_ideas = list(Idea.objects.filter(Q(project_title__icontains=text) | Q(project_description__icontains=text)).all())
+        search_result = all_ideas
+        
+        if len(search_result)==0:
+            return Response({"message":"No Idea found"}, status=204)
 
-        ideas = list(Idea.objects.all())
+        serializer = IdeaSerializer(search_result, many=True)
+        serializer_data = serializer.data
 
-        if not text:            
-            return Response({"message":"Please provide text"}, status=status.HTTP_400_BAD_REQUEST)
-        else:
-            for idea in ideas:                
-                token_set_ratio_title = fuzz.token_set_ratio(idea.project_title, text)
-                token_set_ratio_description = fuzz.token_set_ratio(idea.project_description, text)
-                if token_set_ratio_title > 60 or token_set_ratio_description > 60:
-                    serializer = IdeaSerializer(idea)
-                    response.append(serializer.data)
-            return Response({"message":response}, status=status.HTTP_200_OK)
+        return Response({"message":serializer_data}, status=status.HTTP_200_OK)
             
 

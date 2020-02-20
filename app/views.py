@@ -20,6 +20,7 @@ from .ideasView import (
     PostIdeaView,
     PublishedIdeasView,
     ViewIdea,
+    SearchIdeaByContent,
 )
 
 from .voteAndCommentViews import (

@@ -5,8 +5,11 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import AllowAny
 
+from django.db.models import Q
+
 from app.serializers import ( 
-    IdeaSerializer
+    IdeaSerializer,
+    
 )
 
 from .models import (
@@ -48,3 +51,26 @@ class ViewIdea(APIView):
             return Response({"message":serializer.data}, status=status.HTTP_200_OK)
         except Idea.DoesNotExist:
             return Response({"message":"Idea not found or Invalid id number"}, status=status.HTTP_204_NO_CONTENT)
+
+class SearchIdeaByContent(APIView):
+    permission_classes = (AllowAny,)
+
+    def get(self, request):
+        keys = {"PENDING":0, "PUBLISHED":1, "REJECTED":2}
+        text = request.query_params.get("text", None)
+        print(text)
+        all_ideas = list(Idea.objects.filter(
+            Q(is_reviewed=keys['PUBLISHED']) & 
+            (Q(project_title__icontains=text) | Q(project_description__icontains=text))).all())
+        search_result = all_ideas
+        
+        if len(search_result)==0:
+            return Response({"message":"No Idea found"}, status=204)
+
+        serializer = IdeaSerializer(search_result, many=True)
+        serializer_data = serializer.data
+
+        return Response({"message":serializer_data}, status=status.HTTP_200_OK)
+            
+        
+        

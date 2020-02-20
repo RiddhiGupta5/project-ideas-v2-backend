@@ -8,6 +8,8 @@ from rest_framework.permissions import AllowAny
 
 from django.contrib.auth import authenticate
 
+from django.db.models import Q
+
 import os
 from dotenv import load_dotenv
 
@@ -143,5 +145,23 @@ class AllIdeasView(APIView):
             return Response({"message":serializer.data}, status=status.HTTP_200_OK)
         else:
             return Response({"message":"Not an Admin"}, status=status.HTTP_403_FORBIDDEN)
+
+
+class SearchAllIdeaByContent(APIView):
+
+    def get(self, request):
+
+        text = request.query_params.get("text", None)
+        print(text)
+        all_ideas = list(Idea.objects.filter(Q(project_title__icontains=text) | Q(project_description__icontains=text)).all())
+        search_result = all_ideas
+        
+        if len(search_result)==0:
+            return Response({"message":"No Idea found"}, status=204)
+
+        serializer = IdeaSerializer(search_result, many=True)
+        serializer_data = serializer.data
+
+        return Response({"message":serializer_data}, status=status.HTTP_200_OK)
             
 

@@ -1,1 +1,1 @@
-web: python manage.py runserver $PORT
+web: gunicorn project_ideas.wsgi

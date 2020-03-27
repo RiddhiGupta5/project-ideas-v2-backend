@@ -3,10 +3,6 @@ from django.shortcuts import render
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from rest_framework.authtoken.models import Token
-from rest_framework.permissions import AllowAny
-
-from django.contrib.auth import authenticate
 
 from django.db.models import Q
 from app.helper_functions import get_user, get_token

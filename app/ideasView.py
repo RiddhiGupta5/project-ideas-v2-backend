@@ -3,7 +3,6 @@ from django.shortcuts import render
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from rest_framework.permissions import AllowAny
 
 from django.db.models import Q
 
@@ -18,7 +17,6 @@ from .models import (
 
 # View for Posting Ideas
 class PostIdeaView(APIView):
-    permission_classes = (AllowAny,)
 
     def post(self, request):
         serializer = IdeaSerializer(data = request.data)
@@ -30,7 +28,6 @@ class PostIdeaView(APIView):
 
 # View for getting all published ideas
 class PublishedIdeasView(APIView):
-    permission_classes = (AllowAny,)
 
     def get(self, request):
         keys = {"PENDING":0, "PUBLISHED":1, "REJECTED":2}
@@ -42,7 +39,6 @@ class PublishedIdeasView(APIView):
 
 # View for getting details for a particular idea
 class ViewIdea(APIView):
-    permission_classes = (AllowAny,)
 
     def get(self, request, pk):
         try:
@@ -53,7 +49,6 @@ class ViewIdea(APIView):
             return Response({"message":"Idea not found or Invalid id number"}, status=status.HTTP_204_NO_CONTENT)
 
 class SearchIdeaByContent(APIView):
-    permission_classes = (AllowAny,)
 
     def get(self, request):
         keys = {"PENDING":0, "PUBLISHED":1, "REJECTED":2}

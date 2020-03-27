@@ -1,20 +1,27 @@
 from django.shortcuts import render
+from django.contrib.auth import login, logout
 
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.authtoken.models import Token
-from rest_framework.permissions import AllowAny
 
 from social_django.utils import load_strategy, load_backend
 from social_core.exceptions import MissingBackend, AuthTokenError, AuthForbidden
 from social_core.backends.oauth import BaseOAuth2
 
+import hashlib
+import jwt
+import datetime
+
+from .helper_functions import get_token, get_user
+
 from app.serializers import (
-    SocialSerializer
+    SocialSerializer,
+    UserSerializer
 )
 
-from .models import User
+from .models import User, UserToken
 
 from .ideasView import (
     PostIdeaView,
@@ -30,7 +37,6 @@ from .voteAndCommentViews import (
 
 # View for Social Login 
 class SocialLoginView(APIView):
-    permission_classes = (AllowAny,)
 
     def post(self, request):
         #Validating and getting data from request
@@ -70,22 +76,113 @@ class SocialLoginView(APIView):
             token, _ = Token.objects.get_or_create(user=user)
             response = {
                 "id": user.id,
+                "username":user.username,
+                "platform":user.platform,
                 "email": user.email,                
                 "token":token.key
             }
             return Response(status=status.HTTP_200_OK, data=response)
 
 # View for Social Logout
-class SocialLogoutView(APIView):
+class LogoutView(APIView):
 
     def get(self, request, format=None):
         # Get User and delete the token
-        user = request.user
+        token = request.headers.get('Authorization', None)
+        if token is None or token=="":
+            return Response({"message":"Authorization credentials missing"}, status=status.HTTP_403_FORBIDDEN)
+        
+        user = get_user(token)
+        if user is None:
+            return Response({"message":"User Already Logged Out"}, status=status.HTTP_403_FORBIDDEN)
+
         response = {
             "message":"User logged out", 
             "Details":{
                 "id": user.id,
+                "username":user.username,
+                "platform":user.platform,
                 "email": user.email
             }}
-        request.user.auth_token.delete()
+        
+        usertoken = UserToken.objects.get(user=user.id)
+        usertoken.delete()
         return Response(response, status=status.HTTP_200_OK)
+
+class UserSignupView(APIView):
+
+    # Sigup user (create new object)
+    def post(self, request):
+        user_data = {}
+        user_data['email'] = request.data.get("email", None)
+        user_data['username'] = request.data.get("username", None)
+        user_data['platform'] = request.data.get("platform", 0)
+        user_data['password'] = request.data.get("password", None)
+        if len(user_data['password'])<6:
+            return Response({"Invalid Password"}, status=status.HTTP_400_BAD_REQUEST)
+        serializer = UserSerializer(data=user_data)       
+
+        if serializer.is_valid():
+            serializer.save()            
+            
+            user = User.objects.get(username=user_data['username'], platform=user_data['platform'])
+            token = get_token({
+                "username":user.username,
+                "platform":user.platform,
+                "date_time":str(datetime.datetime.today())
+            })
+            user_data['token'] = token
+            del user_data['password']
+            try:
+                usertoken = UserToken.objects.get(user=user.id)
+                return Response({"message":"User Already Logged in"}, status=status.HTTP_400_BAD_REQUEST)
+            except UserToken.DoesNotExist:
+                UserToken.objects.create(
+                    token=token,
+                    user=user
+                )
+                return Response({"message":"User Signed up successfully", "User":user_data}, status=status.HTTP_201_CREATED)
+        else:
+            return Response({"message":serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+
+class NormalLoginView(APIView):
+
+    def post(self, request):
+        req_data = request.data
+        if req_data.get("platform", None)==None:
+            req_data['platform'] = 0
+        try:
+            user = User.objects.get(username=req_data['username'], platform=req_data['platform'])
+            m = hashlib.md5()     
+            m.update(req_data['password'].encode("utf-8"))
+            if user.password == str(m.digest()):
+                token = get_token({
+                    "username":user.username,
+                    "platform":user.platform,
+                    "date_time":str(datetime.datetime.today())
+                })
+                try:
+                    usertoken = UserToken.objects.get(user=user.id)
+                    return Response({"message":"User Logged in", "User":{
+                        "id":user.id,
+                        "username":user.username,
+                        "platform":user.platform,
+                        "email":user.email,
+                        "token":usertoken.token
+                    }})
+                except:
+                    UserToken.objects.create(
+                        token=token,
+                        user=user
+                    )
+                    return Response({"message":"User Logged in", "User":{
+                        "id":user.id,
+                        "username":user.username,
+                        "platform":user.platform,
+                        "email":user.email,
+                        "token":token
+                    }})
+            else:
+                return Response({"message":"Invalid Password"}, status=status.HTTP_403_FORBIDDEN)
+        except User.DoesNotExist:
+            return Response({"message":"User does not exist"}, status=status.HTTP_403_FORBIDDEN)      

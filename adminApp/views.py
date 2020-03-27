@@ -1,27 +1,22 @@
-from django.shortcuts import render
-
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
+import datetime
+import hashlib
+import os
 
 from django.db.models import Q
-from app.helper_functions import get_user, get_token
-
-import os
-import hashlib
-import datetime
+from django.shortcuts import render
 from dotenv import load_dotenv
+from rest_framework import status
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
-from app.serializers import ( 
-    UserSerializer,
-    IdeaSerializer
-)
+from app.helper_functions import get_token, get_user
+from app.models import Idea, User, UserToken
+from app.serializers import IdeaSerializer, UserSerializer
 
-from app.models import (
-    Idea,
-    User,
-    UserToken
-)
+from .answer_views import (AllAnswersView, AnswerView, ExcelSheetView,
+                           FilterAnswerDateView, MarksView)
+from .question_views import (AllQuestionsView, FilterQuestionDateView,
+                             QuestionView)
 
 load_dotenv()
 
@@ -244,5 +239,3 @@ class SearchAllIdeaByContent(APIView):
         serializer_data = serializer.data
 
         return Response({"message":serializer_data}, status=status.HTTP_200_OK)
-            
-

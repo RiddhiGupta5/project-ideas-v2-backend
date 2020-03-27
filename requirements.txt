@@ -30,3 +30,4 @@ lml==0.0.9
 pyexcel==0.5.15
 pyexcel-io==0.5.20
 texttable==1.6.2
+xlrd==1.2.0

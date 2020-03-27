@@ -23,7 +23,11 @@ class QuestionView(APIView):
 
         if user.is_superuser==True:
             serializer = QuestionSerializer(data=request.data)
-            return Response({"message":serializer.data}, status=status.HTTP_200_OK)
+            if serializer.is_valid():
+                serializer.save()
+                return Response({"message":serializer.data}, status=status.HTTP_200_OK)
+            else:
+                return Response({"message":"Invalid Question"}, status=status.HTTP_400_BAD_REQUEST)
         else:
             return Response({"message":"Not an Admin"}, status=status.HTTP_403_FORBIDDEN)   
 
@@ -45,7 +49,7 @@ class QuestionView(APIView):
         
 class AllQuestionsView(APIView):
 
-    def get(self, request, pk):
+    def get(self, request):
         token = request.headers.get('Authorization', None)
         if token is None or token=="":
             return Response({"message":"Authorization credentials missing"}, status=status.HTTP_403_FORBIDDEN)

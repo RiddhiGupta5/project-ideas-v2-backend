@@ -1,17 +1,20 @@
-from rest_framework.views import APIView
-from rest_framework.response import Response
+import datetime
+
+import pyexcel
+import xlrd
+from django.db.models import Q
 from rest_framework import status
 from rest_framework.exceptions import ParseError
 from rest_framework.parsers import FileUploadParser
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
-from django.db.models import Q
-from app.helper_functions import get_user, get_token
+from app.helper_functions import get_token, get_user
+from app.models import User
+from app.serializers import UserSerializer
 
-import datetime
-import pyexcel
-
-from .models import Question, Answer
-from .serializers import QuestionSerializer, AnswerSerializer
+from .models import Answer, Question
+from .serializers import AnswerSerializer, QuestionSerializer
 
 
 class AnswerView(APIView):
@@ -61,7 +64,7 @@ class AnswerView(APIView):
 
 class AllAnswersView(APIView):
 
-    def get(self, request, pk):
+    def get(self, request):
         token = request.headers.get('Authorization', None)
         if token is None or token=="":
             return Response({"message":"Authorization credentials missing"}, status=status.HTTP_403_FORBIDDEN)
@@ -94,6 +97,9 @@ class FilterAnswerDateView(APIView):
         date = request.query_params.get("date", None)
         if date==None or date=="":
             return Response({"message":"Date missing"}, status=status.HTTP_400_BAD_REQUEST)
+
+        if user.is_superuser==False:
+            return Response({"message":"Not an Admin"}, status=status.HTTP_403_FORBIDDEN)  
         
         date = date.split('-')
         day = int(date[0])
@@ -123,17 +129,11 @@ class MarksView(APIView):
             req_data = request.data
             try:
                 answer = Answer.objects.get(id=req_data['answer_id'])
-                answer_type = req_data.get('answer_type', None)
-                marks = eq_data.data.get("marks", None)
-                if answer_type==0:
-                   answer.marks = 1
-                elif answer_type==1:
-                    if marks==None or marks=="":
-                        return Response({"message":"Invalid Data"}, status=status.HTTP_400_BAD_REQUEST)
-                    answer.marks = marks
-                else:
-                    return Response({"message":"Invalid Data"}, status=status.HTTP_400_BAD_REQUEST)
-                
+                answer_type = answer.answer_type
+                marks = req_data.get("marks", None)
+                if marks==None or marks=="":
+                    return Response({"message":"Please provide marks"}, status=status.HTTP_400_BAD_REQUEST)
+                answer.marks = marks                
                 answer.save()
                 serializer = AnswerSerializer(answer)
                 return Response({"message":"Marks Saved", "Answer":serializer.data}, status=status.HTTP_200_OK)
@@ -147,8 +147,26 @@ class ExcelSheetView(APIView):
     parser_class = (FileUploadParser,)
 
     def post(self, request):
+        token = request.headers.get('Authorization', None)
+        if token is None or token=="":
+            return Response({"message":"Authorization credentials missing"}, status=status.HTTP_403_FORBIDDEN)
+        
+        user = get_user(token)
+        if user is None:
+            return Response({"message":"User Already Logged Out"}, status=status.HTTP_403_FORBIDDEN)
+
+        if user.is_superuser==False:
+            return Response({"message":"Not an Admin"}, status=status.HTTP_403_FORBIDDEN) 
+
         if 'file' not in request.data:
-            raise ParseError("Empty content")
+            return Response({"message":"File Missing"}, status=status.HTTP_400_BAD_REQUEST)
+        if 'daily_challenge' not in request.data:
+            return Response({"message":"Daily Challenge Missing"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            question = Question.objects.get(id=request.data['daily_challenge'])
+        except Question.DoesNotExist:
+            return Response({"message":"Invalid daily_challenge"}, status=status.HTTP_400_BAD_REQUEST)
 
         file = request.data['file']
         extension = file.name.split('.')[-1]
@@ -156,9 +174,85 @@ class ExcelSheetView(APIView):
             return Response({"message":"Invalid File Format"}, status=status.HTTP_400_BAD_REQUEST)
 
         content = file.read()
-        print(content)
-        return Response({"message":"file content"}, status=status.HTTP_200_OK)
+        records = pyexcel.iget_records(file_type=extension, file_content=content)
+        print("____________________________________________________________________")
+        for record in records:
+            username = record.get('username', None)
+            if username=="":
+                print("LOGS: USER -> Username Missing")
+                continue
+            email = record.get('email', None)
+            if email=="":
+                email=None
+            answer_body = record.get('answer_body', None)
+            if answer_body=="":
+                answer_body=None
+            platform = 1
+
+            try:
+                user = User.objects.filter(Q(username__iexact=username) & Q(platform=platform))
+                user = user[0]
+                answer = {
+                    "answer_type":0,
+                    "answer_body":answer_body,
+                    "daily_challenge":question.id,
+                    "user_id":user.id
+                }
+                
+            except User.DoesNotExist:
+                user_data = {
+                    "username":username,
+                    "email":email,
+                    "platform":platform
+                }
+                user_serializer = UserSerializer(data=user_data)
+                if user_serializer.is_valid():
+                    user_serializer.save()
+                    user = User.objects.filter(Q(username__iexact=username) & Q(platform=platform))
+                    user = user[0]
+                    answer = {
+                        "answer_type":0,
+                        "answer_body":answer_body,
+                        "daily_challenge":question.id,
+                        "user_id":user.id
+                    }
+                    print("LOGS: USER -> New User created username = " + username)
+                else:
+                    print("LOGS: USER -> Invalid user username = " + username)
+                    print(user_serializer.errors)
+
+            try:
+                stored_answer = Answer.objects.get(user_id=answer['user_id'], daily_challenge=question.id)
+                print("LOGS: ANSWER -> Answer Already Stored for user " + username)
+
+            except:
+                serializer = AnswerSerializer(data=answer)
+                if serializer.is_valid():
+                    serializer.save()
+                    print("LOGS: ANSWER -> Answer stored for " + username)
+                else:
+                    print("LOGS: ANSWER -> Invalid Answer of " + username)
+
+        print("____________________________________________________________________")
+        return Response({"message":"Records saved succesfully"}, status=status.HTTP_200_OK)
+
+
+class LeaderBoardView(APIView):
+
+    def get(self, request):
+        result = []
+        users = User.objects.all()
+        for user in users:
+            answers = Answer.objects.filter(user_id=user.id)
+            marks = 0
+            for answer in answers:
+                marks = marks + answer.marks
+            user_data = {
+                "username":user.username,
+                "platform":user.platform,
+                "marks":marks * 100
+            }
+            result.append(user_data)
+        result = sorted(result, key=lambda k: k['marks'], reverse=True)
+        return Response({"message":result}, status=status.HTTP_200_OK)
         
-
-
-

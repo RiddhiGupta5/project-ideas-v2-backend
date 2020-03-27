@@ -9,7 +9,7 @@ class User(models.Model):
     username = models.CharField(max_length=50, unique=False)
     email = models.EmailField(null=True)
     platform = models.IntegerField(default=0)
-    password = models.CharField(max_length=500)
+    password = models.CharField(max_length=500, null=True, default=" ")
     is_superuser = models.BooleanField(default=False)
     date_joined = models.DateTimeField(default=timezone.now)
 

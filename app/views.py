@@ -1,5 +1,6 @@
 from django.shortcuts import render
 from django.contrib.auth import login, logout
+from django.db.models import Q
 
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -125,7 +126,7 @@ class UserSignupView(APIView):
         if serializer.is_valid():
             serializer.save()            
             
-            user = User.objects.get(username=user_data['username'], platform=user_data['platform'])
+            user = User.objects.filter(Q(username__iexact=user_data['username']) & Q(platform=user_data['platform']))
             token = get_token({
                 "username":user.username,
                 "platform":user.platform,
@@ -152,7 +153,7 @@ class NormalLoginView(APIView):
         if req_data.get("platform", None)==None:
             req_data['platform'] = 0
         try:
-            user = User.objects.get(username=req_data['username'], platform=req_data['platform'])
+            user = User.objects.filter(Q(username__iexact=req_data['username']) & Q(platform=req_data['platform']))
             m = hashlib.md5()     
             m.update(req_data['password'].encode("utf-8"))
             if user.password == str(m.digest()):

@@ -14,7 +14,8 @@ from app.models import Idea, User, UserToken
 from app.serializers import IdeaSerializer, UserSerializer
 
 from .answer_views import (AllAnswersView, AnswerView, ExcelSheetView,
-                           FilterAnswerDateView, MarksView, LeaderBoardView)
+                           FilterAnswerDateView, MarksView, LeaderBoardView,
+                           UnevaluatedAnswersView)
 from .question_views import (AllQuestionsView, FilterQuestionDateView,
                              QuestionView)
 

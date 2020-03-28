@@ -83,6 +83,28 @@ class AllAnswersView(APIView):
         else:
             return Response({"message":"Not an Admin"}, status=status.HTTP_403_FORBIDDEN)  
 
+class UnevaluatedAnswersView(APIView):
+
+    def get(self, request):
+        token = request.headers.get('Authorization', None)
+        if token is None or token=="":
+            return Response({"message":"Authorization credentials missing"}, status=status.HTTP_403_FORBIDDEN)
+        
+        user = get_user(token)
+        if user is None:
+            return Response({"message":"User Already Logged Out"}, status=status.HTTP_403_FORBIDDEN)
+
+        if user.is_superuser==True:
+            answers = Answer.objects.filter(evaluated=False)
+            if len(answers) == 0:
+                return Response({"message":"No Answers Found"}, status=status.HTTP_204_NO_CONTENT)
+            
+            serializer = AnswerSerializer(answers, many=True)
+            return Response({"message":serializer.data}, status=status.HTTP_200_OK)
+        else:
+            return Response({"message":"Not an Admin"}, status=status.HTTP_403_FORBIDDEN)
+
+
 class FilterAnswerDateView(APIView):
 
     def get(self, request):
@@ -129,11 +151,13 @@ class MarksView(APIView):
             req_data = request.data
             try:
                 answer = Answer.objects.get(id=req_data['answer_id'])
-                answer_type = answer.answer_type
+                if answer.evaluated==True:
+                    return Response({"message":"Answer Already Evaluated"}, status=status.HTTP_400_BAD_REQUEST)
                 marks = req_data.get("marks", None)
                 if marks==None or marks=="":
                     return Response({"message":"Please provide marks"}, status=status.HTTP_400_BAD_REQUEST)
-                answer.marks = marks                
+                answer.marks = marks 
+                answer.evaluated = True               
                 answer.save()
                 serializer = AnswerSerializer(answer)
                 return Response({"message":"Marks Saved", "Answer":serializer.data}, status=status.HTTP_200_OK)

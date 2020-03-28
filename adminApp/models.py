@@ -15,3 +15,4 @@ class Answer(models.Model):
     marks = models.IntegerField(default=0)
     user_id = models.ForeignKey(User, on_delete=models.CASCADE)
     date_time = models.DateTimeField(auto_now_add=True)
+    evaluated = models.BooleanField(default=False)

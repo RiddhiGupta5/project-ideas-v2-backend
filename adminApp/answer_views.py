@@ -38,7 +38,7 @@ class AnswerView(APIView):
         if req_data['daily_challenge'] and req_data['weekly_challenge']:
             return Response({"message":"Invlaid Answer"}, status=status.HTTP_400_BAD_REQUEST)
 
-        answer = Answer.Objects.filter(
+        answer = Answer.objects.filter(
             Q(user_id=user.id) & 
             Q(Q(daily_challenge=req_data['daily_challenge']) | Q(weekly_challenge=req_data['weekly_challenge'])))
         if len(answer)!=0:

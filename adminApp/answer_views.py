@@ -41,6 +41,15 @@ class AnswerView(APIView):
         answer = Answer.Objects.filter(
             Q(user_id=user.id) & 
             Q(Q(daily_challenge=req_data['daily_challenge']) | Q(weekly_challenge=req_data['weekly_challenge'])))
+        if len(answer)!=0:
+            answer = answer[0]
+            if answer.answer_type==1 and req_data['answer_body']!=None and answer.evaluated==False:
+                answer.answer_body = req_data['answer_body']
+                answer.save()
+                serializer = AnswerSerializer(answer)
+                return Response({"message":"Answer saved", "Answer":serializer.data}, status=status.HTTP_200_OK)
+            else:
+                return Response({"message":"Already Answered"}, status=status.HTTP_400_BAD_REQUEST)
 
         serializer = AnswerSerializer(data=req_data)
         if serializer.is_valid():

@@ -31,3 +31,7 @@ pyexcel==0.5.15
 pyexcel-io==0.5.20
 texttable==1.6.2
 xlrd==1.2.0
+et-xmlfile==1.0.1
+jdcal==1.4.1
+openpyxl==3.0.3
+pyexcel-xlsx==0.5.8

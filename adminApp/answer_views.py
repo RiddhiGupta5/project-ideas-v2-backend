@@ -226,8 +226,8 @@ class ExcelSheetView(APIView):
                 answer_body=None
             platform = 1
 
-            try:
-                user = User.objects.filter(Q(username__iexact=username) & Q(platform=platform))
+            user = User.objects.filter(Q(username__iexact=username) & Q(platform=platform))
+            if len(user)!=0:
                 user = user[0]
                 answer = {
                     "answer_type":0,
@@ -236,7 +236,7 @@ class ExcelSheetView(APIView):
                     "user_id":user.id
                 }
                 
-            except User.DoesNotExist:
+            else:
                 user_data = {
                     "username":username,
                     "email":email,

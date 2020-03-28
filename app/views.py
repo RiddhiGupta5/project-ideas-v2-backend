@@ -63,6 +63,7 @@ class SocialLoginView(APIView):
             user = backend.do_auth(access_token)
             print(user.id)
             authenticated_user = backend.do_auth(access_token, user=user)
+
         except Exception as error:
             return Response({
                 "error": {
@@ -74,15 +75,47 @@ class SocialLoginView(APIView):
 
         if authenticated_user and authenticated_user.is_active:     
             #generate Token for authtication
-            token, _ = Token.objects.get_or_create(user=user)
-            response = {
-                "id": user.id,
+            my_user = User.objects.filter(Q(username__iexact=user.username) & Q(platform=0))
+            if len(my_user)==0:
+                user = User.objects.create(
+                    username=user.username,
+                    email=user.email,
+                    platform=0
+                )
+            else:
+                user = my_user[0]
+
+            token = get_token({
                 "username":user.username,
                 "platform":user.platform,
-                "email": user.email,                
-                "token":token.key
-            }
-            return Response(status=status.HTTP_200_OK, data=response)
+                "date_time":str(datetime.datetime.today())
+            })
+            try:
+                usertoken = UserToken.objects.get(user=user.id)
+                return Response({
+                    "message":"User Already Logged in",
+                    "User":{
+                        "id": user.id,
+                        "username":user.username,
+                        "platform":user.platform,
+                        "email": user.email,                
+                        "token":token
+                    }
+                }, status=status.HTTP_400_BAD_REQUEST)
+            except UserToken.DoesNotExist:
+                UserToken.objects.create(
+                    token=token,
+                    user=user
+                )
+                return Response({
+                    "message":"User Signed up successfully", 
+                    "User":{
+                        "id": user.id,
+                        "username":user.username,
+                        "platform":user.platform,
+                        "email": user.email,                
+                        "token":token
+                    }}, status=status.HTTP_201_CREATED)
 
 # View for Social Logout
 class LogoutView(APIView):
@@ -127,6 +160,7 @@ class UserSignupView(APIView):
             serializer.save()            
             
             user = User.objects.filter(Q(username__iexact=user_data['username']) & Q(platform=user_data['platform']))
+            user = user[0]
             token = get_token({
                 "username":user.username,
                 "platform":user.platform,
@@ -152,8 +186,12 @@ class NormalLoginView(APIView):
         req_data = request.data
         if req_data.get("platform", None)==None:
             req_data['platform'] = 0
-        try:
-            user = User.objects.filter(Q(username__iexact=req_data['username']) & Q(platform=req_data['platform']))
+        
+        user = User.objects.filter(Q(username__iexact=req_data['username']) & Q(platform=req_data['platform']))
+        if len(user)==0:
+            return Response({"message":"User does not exist"}, status=status.HTTP_403_FORBIDDEN)  
+        else:
+            user = user[0]
             m = hashlib.md5()     
             m.update(req_data['password'].encode("utf-8"))
             if user.password == str(m.digest()):
@@ -185,5 +223,83 @@ class NormalLoginView(APIView):
                     }})
             else:
                 return Response({"message":"Invalid Password"}, status=status.HTTP_403_FORBIDDEN)
-        except User.DoesNotExist:
-            return Response({"message":"User does not exist"}, status=status.HTTP_403_FORBIDDEN)      
+            
+
+class LoginSignup(APIView):
+
+    def post(self, request):
+        req_data = request.data
+        if req_data.get("platform", None)==None:
+            req_data['platform'] = 0
+        
+        user = User.objects.filter(Q(username__iexact=req_data['username']) & Q(platform=req_data['platform']))
+        if len(user)==0:
+            serializer = UserSerializer(data=req_data)       
+            print(req_data)
+            if serializer.is_valid():
+                serializer.save()
+                user = User.objects.filter(Q(username__iexact=req_data['username']) & Q(platform=req_data['platform']))
+                user = user[0]
+                token = get_token({
+                    "username":user.username,
+                    "platform":user.platform,
+                    "date_time":str(datetime.datetime.today())
+                })
+                req_data['email'] = user.email
+                req_data['token'] = token
+                
+                try:
+                    usertoken = UserToken.objects.get(user=user.id)
+                    return Response({"message":"User Already Logged in", "User":{
+                        "id":user.id,
+                        "username":user.username,
+                        "platform":user.platform,
+                        "email":user.email,
+                        "token":usertoken.token
+                    }}, status=status.HTTP_200_OK)
+                except UserToken.DoesNotExist:
+                    UserToken.objects.create(
+                        token=token,
+                        user=user
+                    )
+                    return Response({"message":"User Signed up successfully", "User":req_data}, status=status.HTTP_201_CREATED)
+            else:
+                return Response({"message":serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            user = user[0]
+            if req_data.get("password", None)==None:
+                req_data['password'] = " "
+            m = hashlib.md5()     
+            m.update(req_data['password'].encode("utf-8"))
+            if user.password == str(m.digest()):
+                token = get_token({
+                    "username":user.username,
+                    "platform":user.platform,
+                    "date_time":str(datetime.datetime.today())
+                })
+                try:
+                    usertoken = UserToken.objects.get(user=user.id)
+                    return Response({"message":"User Logged in", "User":{
+                        "id":user.id,
+                        "username":user.username,
+                        "platform":user.platform,
+                        "email":user.email,
+                        "token":usertoken.token
+                    }})
+                except:
+                    UserToken.objects.create(
+                        token=token,
+                        user=user
+                    )
+                    return Response({"message":"User Logged in", "User":{
+                        "id":user.id,
+                        "username":user.username,
+                        "platform":user.platform,
+                        "email":user.email,
+                        "token":token
+                    }})
+            else:
+                return Response({"message":"Invalid Password"}, status=status.HTTP_403_FORBIDDEN)
+
+            
+                

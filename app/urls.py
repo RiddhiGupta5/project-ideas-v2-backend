@@ -10,6 +10,7 @@ from app.views import (
     SearchIdeaByContent,
     UserSignupView,
     NormalLoginView,
+    LoginSignup
 )
 from rest_framework import routers
 
@@ -27,5 +28,6 @@ urlpatterns = [
     path("comment/<int:pk>/", CommentView.as_view()),
     path("search_published_ideas/", SearchIdeaByContent.as_view()),
     path("normal_login/", NormalLoginView.as_view()),
-    path("signup/", UserSignupView.as_view())
+    path("signup/", UserSignupView.as_view()),
+    path("login_signup/", LoginSignup.as_view()),
 ]

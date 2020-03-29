@@ -17,7 +17,7 @@ from .answer_views import (AllAnswersView, AnswerView, ExcelSheetView,
                            FilterAnswerDateView, MarksView, LeaderBoardView,
                            UnevaluatedAnswersView)
 from .question_views import (AllQuestionsView, FilterQuestionDateView,
-                             QuestionView)
+                             QuestionView, LatestQuestionView)
 
 load_dotenv()
 

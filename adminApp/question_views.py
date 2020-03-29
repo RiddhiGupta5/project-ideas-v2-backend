@@ -6,6 +6,7 @@ from django.db.models import Q
 from app.helper_functions import get_user, get_token
 
 import datetime
+import pytz
 
 from .models import Question, Answer
 from .serializers import QuestionSerializer, AnswerSerializer
@@ -92,3 +93,25 @@ class FilterQuestionDateView(APIView):
 
         return Response({"message":serializer.data}, status=status.HTTP_200_OK)
 
+class LatestQuestionView(APIView):
+
+    def get(self, request):
+        date = datetime.datetime.now(pytz.utc)
+        questions = Question.objects.all()
+        min = 1000
+        if len(questions)==0:
+            return Response({"message":"No questions found"}, status=status.HTTP_204_NO_CONTENT)
+        result = questions[0]
+        for question in questions:
+            quest_date = question.date_time
+            diff = (date - quest_date).seconds
+            print(diff)
+            if diff<min:
+                min = diff
+                result = question
+        
+        if result:
+            serializer = QuestionSerializer(result)
+            return Response({"message":"Latest Question", "Question":serializer.data}, status=status.HTTP_200_OK)
+        else:
+            return Response({"message":"No questions found"}, status=status.HTTP_204_NO_CONTENT)

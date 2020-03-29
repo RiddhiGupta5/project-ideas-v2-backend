@@ -4,6 +4,8 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 
+from .helper_functions import get_user
+
 from app.serializers import ( 
     CommentSerializer,
     IdeaSerializer
@@ -25,7 +27,13 @@ class VoteView(APIView):
         idea_keys = {"PENDING":0, "PUBLISHED":1, "REJECTED":2}
         keys = {"UPVOTE":1, "DOWNVOTE":-1}
         req_data = request.data
-        user = request.user
+        token = request.headers.get('Authorization', None)
+        if token is None or token=="":
+            return Response({"message":"Authorization credentials missing"}, status=status.HTTP_403_FORBIDDEN)
+        
+        user = get_user(token)
+        if user is None:
+            return Response({"message":"User Not Allowed"}, status=status.HTTP_403_FORBIDDEN)
 
         # Checking if the idea with idea_id exists
         try:
@@ -95,7 +103,15 @@ class CommentView(APIView):
 
     def post(self, request):
         keys = {"PENDING":0, "PUBLISHED":1, "REJECTED":2}
-        request.data['user_id'] = request.user.id
+        token = request.headers.get('Authorization', None)
+        if token is None or token=="":
+            return Response({"message":"Authorization credentials missing"}, status=status.HTTP_403_FORBIDDEN)
+        
+        user = get_user(token)
+        if user is None:
+            return Response({"message":"User Not Allowed"}, status=status.HTTP_403_FORBIDDEN)
+
+        request.data['user_id'] = user.id
         
         # Checking if an idea with idea_id exists
         try:

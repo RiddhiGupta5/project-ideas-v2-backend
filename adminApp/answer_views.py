@@ -1,4 +1,5 @@
 import datetime
+import os
 
 import pyexcel
 import xlrd
@@ -295,6 +296,8 @@ class LeaderBoardView(APIView):
         key = 1
         last_position = 1
         for item in result:
+            if item['username']==os.getenv('ADMIN_USERNAME'):
+                result.remove(item)
             item['key'] = key
             key = key + 1
             if last_marks==item['marks']:

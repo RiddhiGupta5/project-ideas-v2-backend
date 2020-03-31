@@ -198,13 +198,8 @@ class ExcelSheetView(APIView):
 
         if 'file' not in request.data:
             return Response({"message":"File Missing"}, status=status.HTTP_400_BAD_REQUEST)
-        if 'daily_challenge' not in request.data:
-            return Response({"message":"Daily Challenge Missing"}, status=status.HTTP_400_BAD_REQUEST)
 
-        try:
-            question = Question.objects.get(id=request.data['daily_challenge'])
-        except Question.DoesNotExist:
-            return Response({"message":"Invalid daily_challenge"}, status=status.HTTP_400_BAD_REQUEST)
+        
 
         file = request.data['file']
         extension = file.name.split('.')[-1]
@@ -215,13 +210,30 @@ class ExcelSheetView(APIView):
         records = pyexcel.iget_records(file_type=extension, file_content=content)
         print("____________________________________________________________________")
         for record in records:
+
+            #####   USERNAME   ########
             username = record.get('username', None)
             if username=="":
                 print("LOGS: USER -> Username Missing")
                 continue
+
+            #####   QUESTION   ########
+            daily_challenge = record.get('daily_challenge', None)
+            if daily_challenge=="":
+                print("LOGS: QUESTION -> Question Missing")
+                continue
+            try:
+                question = Question.objects.get(id=daily_challenge)
+            except Question.DoesNotExist:
+                print("LOGS: QUESTION -> Question Not Found")
+                continue
+
+            #####   EMAIL   ########
             email = record.get('email', None)
             if email=="":
                 email=None
+
+            #####   ANSWER   ########
             answer_body = record.get('answer_body', None)
             if answer_body=="":
                 answer_body=None

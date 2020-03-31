@@ -23,7 +23,7 @@ class User(models.Model):
         super().save(*args, **kwargs)
 
     class Meta:
-        unique_together = ('username', 'platform', 'email')
+        unique_together = ('username', 'email')
 
 
 
@@ -54,3 +54,12 @@ class Vote(models.Model):
 class UserToken(models.Model):
     token = models.CharField(max_length=500)
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="user_token", unique=True)
+
+class SocialMediaDetails(models.Model):
+    platform_name = models.CharField(max_length=20)
+    user_email = models.EmailField()
+    user_id = models.ForeignKey(User, on_delete=models.CASCADE)
+    social_user_id = models.CharField(max_length=500)
+
+    class Meta:
+        unique_together = ('platform_name', 'user_email')

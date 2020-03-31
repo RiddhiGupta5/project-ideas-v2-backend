@@ -217,17 +217,6 @@ class ExcelSheetView(APIView):
                 print("LOGS: USER -> Username Missing")
                 continue
 
-            #####   QUESTION   ########
-            daily_challenge = record.get('daily_challenge', None)
-            if daily_challenge=="":
-                print("LOGS: QUESTION -> Question Missing")
-                continue
-            try:
-                question = Question.objects.get(id=daily_challenge)
-            except Question.DoesNotExist:
-                print("LOGS: QUESTION -> Question Not Found")
-                continue
-
             #####   EMAIL   ########
             email = record.get('email', None)
             if email=="":
@@ -239,8 +228,18 @@ class ExcelSheetView(APIView):
                 answer_body=None
             platform = 1
 
-            user = User.objects.filter(Q(username__iexact=username) & Q(platform=platform) & Q(email=email))
+            user = User.objects.filter(Q(username__iexact=username) & Q(email=email))
             if len(user)!=0:
+                #####   QUESTION   ########
+                daily_challenge = record.get('daily_challenge', None)
+                if daily_challenge=="":
+                    print("LOGS: QUESTION -> Question Missing")
+                    continue
+                try:
+                    question = Question.objects.get(id=daily_challenge)
+                except Question.DoesNotExist:
+                    print("LOGS: QUESTION -> Question Not Found")
+                    continue
                 user = user[0]
                 answer = {
                     "answer_type":0,
@@ -258,15 +257,25 @@ class ExcelSheetView(APIView):
                 user_serializer = UserSerializer(data=user_data)
                 if user_serializer.is_valid():
                     user_serializer.save()
-                    user = User.objects.filter(Q(username__iexact=username) & Q(platform=platform) & Q(email=email))
+                    print("LOGS: USER -> New User created username = " + username)
+                    user = User.objects.filter(Q(username__iexact=username) & Q(email=email))
                     user = user[0]
+                    #####   QUESTION   ########
+                    daily_challenge = record.get('daily_challenge', None)
+                    if daily_challenge=="":
+                        print("LOGS: QUESTION -> Question Missing")
+                        continue
+                    try:
+                        question = Question.objects.get(id=daily_challenge)
+                    except Question.DoesNotExist:
+                        print("LOGS: QUESTION -> Question Not Found")
+                        continue
                     answer = {
                         "answer_type":0,
                         "answer_body":answer_body,
                         "daily_challenge":question.id,
                         "user_id":user.id
                     }
-                    print("LOGS: USER -> New User created username = " + username)
                 else:
                     print("LOGS: USER -> Invalid user username = " + username)
                     print(user_serializer.errors)

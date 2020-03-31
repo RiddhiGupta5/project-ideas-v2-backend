@@ -22,10 +22,11 @@ from .helper_functions import get_token, get_user
 
 from app.serializers import (
     SocialSerializer,
-    UserSerializer
+    UserSerializer,
+    SocialMediaDetailsSerializer,
 )
 
-from .models import User, UserToken
+from .models import User, UserToken, SocialMediaDetails
 
 from .ideasView import (
     PostIdeaView,
@@ -40,6 +41,19 @@ from .voteAndCommentViews import (
 )
 
 load_dotenv()
+
+def social_media_details(user, platform_name, social_user_id):
+    record = SocialMediaDetails.objects.filter(Q(platform_name=platform_name) & Q(user_email=user.email))
+    if len(record)==0:
+        data = {
+            "platform_name":platform_name,
+            "user_email": user.email,
+            "user_id": user.id,
+            "social_user_id": social_user_id
+        }
+        serializer = SocialMediaDetailsSerializer(data=data)
+        if serializer.is_valid():
+            serializer.save()
 
 
 # View for Social Login 
@@ -97,7 +111,7 @@ class SocialLoginView(APIView):
 
         if authenticated_user and authenticated_user.is_active:     
             #generate Token for authtication
-            my_user = User.objects.filter(Q(username__iexact=user.username) & Q(platform=0) & Q(email=user.email))
+            my_user = User.objects.filter(Q(username__iexact=user.username) & Q(email=user.email))
             if len(my_user)==0:
                 user = User.objects.create(
                     username=user.username,
@@ -198,7 +212,7 @@ class UserSignupView(APIView):
         if serializer.is_valid():
             serializer.save()            
             
-            user = User.objects.filter(Q(username__iexact=user_data['username']) & Q(platform=user_data['platform']) & Q(email=user_data['email']))
+            user = User.objects.filter(Q(username__iexact=user_data['username']) & Q(email=user_data['email']))
             user = user[0]
             token = get_token({
                 "username":user.username,
@@ -243,7 +257,7 @@ class NormalLoginView(APIView):
         if req_data.get("platform", None)==None:
             req_data['platform'] = 0
         
-        user = User.objects.filter(Q(username__iexact=req_data['username']) & Q(platform=req_data['platform']) & Q(email=req_data.get('email', None)))
+        user = User.objects.filter(Q(username__iexact=req_data['username']) & Q(email=req_data.get('email', None)))
         if len(user)==0:
             return Response({"message":"User does not exist"}, status=status.HTTP_403_FORBIDDEN)  
         else:
@@ -281,7 +295,7 @@ class NormalLoginView(APIView):
                 return Response({"message":"Invalid Password"}, status=status.HTTP_403_FORBIDDEN)
             
 
-class LoginSignup(APIView):
+class LoginSignup(APIView):        
 
     def post(self, request):
 
@@ -305,13 +319,13 @@ class LoginSignup(APIView):
         if req_data.get("platform", None)==None:
             req_data['platform'] = 0
         
-        user = User.objects.filter(Q(username__iexact=req_data['username']) & Q(platform=req_data['platform']) & Q(email=req_data.get('email', None)))
+        user = User.objects.filter(email=req_data.get('email', None))
         if len(user)==0:
             serializer = UserSerializer(data=req_data)       
             print(req_data)
             if serializer.is_valid():
                 serializer.save()
-                user = User.objects.filter(Q(username__iexact=req_data['username']) & Q(platform=req_data['platform']) & Q(email=req_data.get('email', None)))
+                user = User.objects.filter(Q(username__iexact=req_data['username']) & Q(email=req_data.get('email', None)))
                 user = user[0]
                 token = get_token({
                     "username":user.username,
@@ -323,6 +337,7 @@ class LoginSignup(APIView):
                 
                 try:
                     usertoken = UserToken.objects.get(user=user.id)
+                    social_media_details(user, req_data.get('platform_name', None), req_data.get('social_user_id', None))
                     return Response({"message":"User Already Logged in", "User":{
                         "id":user.id,
                         "username":user.username,
@@ -335,6 +350,7 @@ class LoginSignup(APIView):
                         token=token,
                         user=user
                     )
+                    social_media_details(user, req_data.get('platform_name', None), req_data.get('social_user_id', None))
                     return Response({"message":"User Signed up successfully", "User":req_data}, status=status.HTTP_201_CREATED)
             else:
                 return Response({"message":serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
@@ -352,6 +368,7 @@ class LoginSignup(APIView):
                 })
                 try:
                     usertoken = UserToken.objects.get(user=user.id)
+                    social_media_details(user, req_data.get('platform_name', None), req_data.get('social_user_id', None))
                     return Response({"message":"User Logged in", "User":{
                         "id":user.id,
                         "username":user.username,
@@ -364,6 +381,7 @@ class LoginSignup(APIView):
                         token=token,
                         user=user
                     )
+                    social_media_details(user, req_data.get('platform_name', None), req_data.get('social_user_id', None))
                     return Response({"message":"User Logged in", "User":{
                         "id":user.id,
                         "username":user.username,
@@ -375,4 +393,9 @@ class LoginSignup(APIView):
                 return Response({"message":"Invalid Password"}, status=status.HTTP_403_FORBIDDEN)
 
             
-                
+class SocialMediaDetailsView(APIView):
+
+     def get(self, request):
+         objects = SocialMediaDetails.objects.all()
+         serializers = SocialMediaDetailsSerializer(objects, many=True)
+         return Response({"message":"Social Media Details", "Details":serializers.data}, status=status.HTTP_200_OK)               

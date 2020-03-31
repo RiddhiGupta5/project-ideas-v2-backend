@@ -14,6 +14,9 @@ from social_core.backends.oauth import BaseOAuth2
 import hashlib
 import jwt
 import datetime
+import requests
+import os
+from dotenv import load_dotenv
 
 from .helper_functions import get_token, get_user
 
@@ -36,11 +39,30 @@ from .voteAndCommentViews import (
     CommentView,
 )
 
+load_dotenv()
+
+
 # View for Social Login 
 class SocialLoginView(APIView):
 
     def post(self, request):
         #Validating and getting data from request
+        secret_key = os.getenv("GOOGLE_RECAPTCHA_SECRET")
+        data={
+            'secret': secret_key,
+            'response': request.data.get('g-recaptcha-response', None)
+        }
+
+        resp = requests.post(
+            'https://www.google.com/recaptcha/api/siteverify',
+            data=data
+        )
+
+        print(resp.json())
+
+        if not resp.json().get('success'):
+            return Response(data={'error': 'ReCAPTCHA not verified.'}, status=status.HTTP_406_NOT_ACCEPTABLE)
+
         req_data = request.data
         serializer = SocialSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -147,6 +169,23 @@ class UserSignupView(APIView):
 
     # Sigup user (create new object)
     def post(self, request):
+
+        secret_key = os.getenv("GOOGLE_RECAPTCHA_SECRET")
+        data={
+            'secret': secret_key,
+            'response': request.data.get('g-recaptcha-response', None)
+        }
+
+        resp = requests.post(
+            'https://www.google.com/recaptcha/api/siteverify',
+            data=data
+        )
+
+        print(resp.json())
+
+        if not resp.json().get('success'):
+            return Response(data={'error': 'ReCAPTCHA not verified.'}, status=status.HTTP_406_NOT_ACCEPTABLE)
+
         user_data = {}
         user_data['email'] = request.data.get("email", None)
         user_data['username'] = request.data.get("username", None)
@@ -183,6 +222,23 @@ class UserSignupView(APIView):
 class NormalLoginView(APIView):
 
     def post(self, request):
+
+        secret_key = os.getenv("GOOGLE_RECAPTCHA_SECRET")
+        data={
+            'secret': secret_key,
+            'response': request.data.get('g-recaptcha-response', None)
+        }
+
+        resp = requests.post(
+            'https://www.google.com/recaptcha/api/siteverify',
+            data=data
+        )
+
+        print(resp.json())
+
+        if not resp.json().get('success'):
+            return Response(data={'error': 'ReCAPTCHA not verified.'}, status=status.HTTP_406_NOT_ACCEPTABLE)
+
         req_data = request.data
         if req_data.get("platform", None)==None:
             req_data['platform'] = 0
@@ -228,6 +284,23 @@ class NormalLoginView(APIView):
 class LoginSignup(APIView):
 
     def post(self, request):
+
+        secret_key = os.getenv("GOOGLE_RECAPTCHA_SECRET")
+        data={
+            'secret': secret_key,
+            'response': request.data.get('g-recaptcha-response', None)
+        }
+
+        resp = requests.post(
+            'https://www.google.com/recaptcha/api/siteverify',
+            data=data
+        )
+
+        print(resp.json())
+
+        if not resp.json().get('success'):
+            return Response(data={'error': 'ReCAPTCHA not verified.'}, status=status.HTTP_406_NOT_ACCEPTABLE)
+
         req_data = request.data
         if req_data.get("platform", None)==None:
             req_data['platform'] = 0

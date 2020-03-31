@@ -23,7 +23,7 @@ class User(models.Model):
         super().save(*args, **kwargs)
 
     class Meta:
-        unique_together = ('username', 'platform',)
+        unique_together = ('username', 'platform', 'email')
 
 
 

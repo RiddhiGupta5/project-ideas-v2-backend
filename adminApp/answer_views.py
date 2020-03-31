@@ -295,16 +295,28 @@ class LeaderBoardView(APIView):
         last_marks = result[0]['marks']
         key = 1
         last_position = 1
+        admin = None
+        toppers = [1, 2, 3]
         for item in result:
             if item['username']==os.getenv('ADMIN_USERNAME'):
-                result.remove(item)
+                admin = item
             item['key'] = key
             key = key + 1
             if last_marks==item['marks']:
                 item['position'] = last_position
+                if item['position'] in toppers:
+                    item['topper'] = item['position']
+                else:
+                    item['topper'] = 0
             else:
                 last_position = last_position + 1
                 item['position'] = last_position
+                if item['position'] in toppers:
+                    item['topper'] = item['position']
+                else:
+                    item['topper'] = 0
+
             last_marks = item['marks']
+        result.remove(item)
         return Response({"message":result}, status=status.HTTP_200_OK)
         

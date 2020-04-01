@@ -351,6 +351,8 @@ class LeaderBoardView(APIView):
                     item['topper'] = 0
 
             last_marks = item['marks']
-        result.remove(admin)
+
+        if admin:
+            result.remove(admin)
         return Response({"message":result}, status=status.HTTP_200_OK)
         

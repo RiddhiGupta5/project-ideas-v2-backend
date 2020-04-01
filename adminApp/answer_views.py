@@ -324,6 +324,8 @@ class LeaderBoardView(APIView):
             }
             result.append(user_data)
         result = sorted(result, key=lambda k: k['marks'], reverse=True)
+        if len(result)==0:
+            return Response({"message":result}, status=status.HTTP_200_OK)
         last_marks = result[0]['marks']
         key = 1
         last_position = 1

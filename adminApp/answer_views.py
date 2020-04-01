@@ -311,8 +311,10 @@ class LeaderBoardView(APIView):
         result = []
         users = User.objects.all()
         for user in users:
-            answers = Answer.objects.filter(user_id=user.id)
+            answers = Answer.objects.filter(Q(user_id=user.id) & Q(evaluated=True))
             marks = 0
+            if len(answers) == 0:
+                continue
             for answer in answers:
                 marks = marks + answer.marks
             user_data = {

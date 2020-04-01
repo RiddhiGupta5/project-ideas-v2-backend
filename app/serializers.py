@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from app.models import User, Idea, Comment
+from app.models import User, Idea, Comment, SocialMediaDetails
 
 class SocialSerializer(serializers.Serializer):
     """
@@ -21,4 +21,9 @@ class IdeaSerializer(serializers.ModelSerializer):
 class CommentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Comment
+        fields = "__all__"
+
+class SocialMediaDetailsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SocialMediaDetails
         fields = "__all__"

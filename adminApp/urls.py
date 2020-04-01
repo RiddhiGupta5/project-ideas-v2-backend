@@ -17,7 +17,8 @@ from adminApp.views import (
     ExcelSheetView,
     LeaderBoardView,
     UnevaluatedAnswersView,
-    LatestQuestionView
+    LatestQuestionView,
+    SocialMediaDetailsView
 )
 from rest_framework import routers
 
@@ -44,5 +45,6 @@ urlpatterns = [
     path("excel_sheet_upload/", ExcelSheetView.as_view()),
     path("leaderboard_view/", LeaderBoardView.as_view()),
     path("unevaluated_answers/", UnevaluatedAnswersView.as_view()),
-    path("latest_question/", LatestQuestionView.as_view()),
+    path("latest_question/", LatestQuestionView.as_view()),    
+    path("social_details/", SocialMediaDetailsView.as_view()),
 ]

@@ -18,4 +18,6 @@ def get_user(token):
 
 def get_token(payload):
     encoded_jwt = jwt.encode(payload, os.getenv('JWT_SECRET'), algorithm='HS256')
-    return encoded_jwt
+    print("HEYYYY")
+    result = (encoded_jwt.decode("utf-8"))
+    return result

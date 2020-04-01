@@ -10,8 +10,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from app.helper_functions import get_token, get_user
-from app.models import Idea, User, UserToken
-from app.serializers import IdeaSerializer, UserSerializer
+from app.models import Idea, User, UserToken, SocialMediaDetails
+from app.serializers import IdeaSerializer, UserSerializer, SocialMediaDetailsSerializer
 
 from .answer_views import (AllAnswersView, AnswerView, ExcelSheetView,
                            FilterAnswerDateView, MarksView, LeaderBoardView,
@@ -240,3 +240,24 @@ class SearchAllIdeaByContent(APIView):
         serializer_data = serializer.data
 
         return Response({"message":serializer_data}, status=status.HTTP_200_OK)
+
+
+class SocialMediaDetailsView(APIView):
+
+    def get(self, request):
+        token = request.headers.get('Authorization', None)
+        if token is None or token=="":
+            return Response({"message":"Authorization credentials missing"}, status=status.HTTP_403_FORBIDDEN)
+        
+        user = get_user(token)
+        if user is None:
+            return Response({"message":"User Already Logged Out"}, status=status.HTTP_403_FORBIDDEN)
+
+        req_data = request.data
+
+        if user.is_superuser==True:
+            objects = SocialMediaDetails.objects.all()
+            serializers = SocialMediaDetailsSerializer(objects, many=True)
+            return Response({"message":"Social Media Details", "Details":serializers.data}, status=status.HTTP_200_OK) 
+        else:
+            return Response({"message":"Not an Admin"}, status=status.HTTP_403_FORBIDDEN)

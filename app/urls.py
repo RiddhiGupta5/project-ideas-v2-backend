@@ -10,7 +10,7 @@ from app.views import (
     SearchIdeaByContent,
     UserSignupView,
     NormalLoginView,
-    LoginSignup
+    LoginSignup,
 )
 from rest_framework import routers
 

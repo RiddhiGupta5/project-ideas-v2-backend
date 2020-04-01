@@ -1,4 +1,5 @@
 import datetime
+import os
 
 import pyexcel
 import xlrd
@@ -197,13 +198,8 @@ class ExcelSheetView(APIView):
 
         if 'file' not in request.data:
             return Response({"message":"File Missing"}, status=status.HTTP_400_BAD_REQUEST)
-        if 'daily_challenge' not in request.data:
-            return Response({"message":"Daily Challenge Missing"}, status=status.HTTP_400_BAD_REQUEST)
 
-        try:
-            question = Question.objects.get(id=request.data['daily_challenge'])
-        except Question.DoesNotExist:
-            return Response({"message":"Invalid daily_challenge"}, status=status.HTTP_400_BAD_REQUEST)
+        
 
         file = request.data['file']
         extension = file.name.split('.')[-1]
@@ -214,20 +210,36 @@ class ExcelSheetView(APIView):
         records = pyexcel.iget_records(file_type=extension, file_content=content)
         print("____________________________________________________________________")
         for record in records:
+
+            #####   USERNAME   ########
             username = record.get('username', None)
             if username=="":
                 print("LOGS: USER -> Username Missing")
                 continue
+
+            #####   EMAIL   ########
             email = record.get('email', None)
             if email=="":
                 email=None
+
+            #####   ANSWER   ########
             answer_body = record.get('answer_body', None)
             if answer_body=="":
                 answer_body=None
             platform = 1
 
-            user = User.objects.filter(Q(username__iexact=username) & Q(platform=platform))
+            user = User.objects.filter(Q(username__iexact=username) & Q(email=email))
             if len(user)!=0:
+                #####   QUESTION   ########
+                daily_challenge = record.get('daily_challenge', None)
+                if daily_challenge=="":
+                    print("LOGS: QUESTION -> Question Missing")
+                    continue
+                try:
+                    question = Question.objects.get(id=daily_challenge)
+                except Question.DoesNotExist:
+                    print("LOGS: QUESTION -> Question Not Found")
+                    continue
                 user = user[0]
                 answer = {
                     "answer_type":0,
@@ -245,15 +257,25 @@ class ExcelSheetView(APIView):
                 user_serializer = UserSerializer(data=user_data)
                 if user_serializer.is_valid():
                     user_serializer.save()
-                    user = User.objects.filter(Q(username__iexact=username) & Q(platform=platform))
+                    print("LOGS: USER -> New User created username = " + username)
+                    user = User.objects.filter(Q(username__iexact=username) & Q(email=email))
                     user = user[0]
+                    #####   QUESTION   ########
+                    daily_challenge = record.get('daily_challenge', None)
+                    if daily_challenge=="":
+                        print("LOGS: QUESTION -> Question Missing")
+                        continue
+                    try:
+                        question = Question.objects.get(id=daily_challenge)
+                    except Question.DoesNotExist:
+                        print("LOGS: QUESTION -> Question Not Found")
+                        continue
                     answer = {
                         "answer_type":0,
                         "answer_body":answer_body,
                         "daily_challenge":question.id,
                         "user_id":user.id
                     }
-                    print("LOGS: USER -> New User created username = " + username)
                 else:
                     print("LOGS: USER -> Invalid user username = " + username)
                     print(user_serializer.errors)
@@ -291,5 +313,31 @@ class LeaderBoardView(APIView):
             }
             result.append(user_data)
         result = sorted(result, key=lambda k: k['marks'], reverse=True)
+        last_marks = result[0]['marks']
+        key = 1
+        last_position = 1
+        admin = None
+        toppers = [1, 2, 3]
+        for item in result:
+            if item['username']==os.getenv('ADMIN_USERNAME'):
+                admin = item
+            item['key'] = key
+            key = key + 1
+            if last_marks==item['marks']:
+                item['position'] = last_position
+                if item['position'] in toppers:
+                    item['topper'] = item['position']
+                else:
+                    item['topper'] = 0
+            else:
+                last_position = last_position + 1
+                item['position'] = last_position
+                if item['position'] in toppers:
+                    item['topper'] = item['position']
+                else:
+                    item['topper'] = 0
+
+            last_marks = item['marks']
+        result.remove(admin)
         return Response({"message":result}, status=status.HTTP_200_OK)
         

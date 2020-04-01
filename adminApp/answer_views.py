@@ -324,6 +324,7 @@ class LeaderBoardView(APIView):
             }
             result.append(user_data)
         result = sorted(result, key=lambda k: k['marks'], reverse=True)
+        print(result)
         if len(result)==0:
             return Response({"message":result}, status=status.HTTP_200_OK)
         last_marks = result[0]['marks']
@@ -331,9 +332,14 @@ class LeaderBoardView(APIView):
         last_position = 1
         admin = None
         toppers = [1, 2, 3]
+        
         for item in result:
             if item['username']==os.getenv('ADMIN_USERNAME'):
                 admin = item
+        if admin:
+            result.remove(admin)
+
+        for item in result:
             item['key'] = key
             key = key + 1
             if last_marks==item['marks']:
@@ -352,7 +358,6 @@ class LeaderBoardView(APIView):
 
             last_marks = item['marks']
 
-        if admin:
-            result.remove(admin)
+        
         return Response({"message":result}, status=status.HTTP_200_OK)
         

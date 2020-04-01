@@ -332,12 +332,14 @@ class LeaderBoardView(APIView):
         last_position = 1
         admin = None
         toppers = [1, 2, 3]
-        
+
         for item in result:
             if item['username']==os.getenv('ADMIN_USERNAME'):
                 admin = item
         if admin:
             result.remove(admin)
+
+        print(result)
 
         for item in result:
             item['key'] = key

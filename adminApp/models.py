@@ -2,7 +2,7 @@ from django.db import models
 from app.models import User
 
 class Question(models.Model):
-    question_body = models.CharField(max_length=150)
+    question_body = models.TextField()
     date_time = models.DateTimeField(auto_now_add=True)
 
 class Answer(models.Model):

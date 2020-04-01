@@ -65,7 +65,7 @@ class AnswerView(APIView):
             serializer.save()
             return Response({"message":"Answer Saved", "Answer":serializer.data}, status=status.HTTP_200_OK)
         else:
-            print("Invalid seializer")
+            print(serializer.data)
             return Response({"message":"Invalid Answer"}, status=status.HTTP_400_BAD_REQUEST)
 
     def get(self, request, pk):

@@ -35,8 +35,15 @@ class AnswerView(APIView):
         req_data['daily_challenge'] = request.data.get("daily_challenge", None)
         req_data['weekly_challenge'] = request.data.get("weekly_challenge", None)
         req_data['user_id'] = user.id
+        
+        print(req_data['answer_body'])
+        print(req_data['answer_type'])
+        print(req_data['daily_challenge'])
+        print(req_data['weekly_challenge'])
+        print(req_data['user_id'])
 
         if req_data['daily_challenge'] and req_data['weekly_challenge']:
+            print("Both are None")
             return Response({"message":"Invlaid Answer"}, status=status.HTTP_400_BAD_REQUEST)
 
         answer = Answer.objects.filter(
@@ -50,6 +57,7 @@ class AnswerView(APIView):
                 serializer = AnswerSerializer(answer)
                 return Response({"message":"Answer saved", "Answer":serializer.data}, status=status.HTTP_200_OK)
             else:
+                pinnt("Already Answered")
                 return Response({"message":"Already Answered"}, status=status.HTTP_400_BAD_REQUEST)
 
         serializer = AnswerSerializer(data=req_data)
@@ -57,6 +65,7 @@ class AnswerView(APIView):
             serializer.save()
             return Response({"message":"Answer Saved", "Answer":serializer.data}, status=status.HTTP_200_OK)
         else:
+            print("Invalid seializer")
             return Response({"message":"Invalid Answer"}, status=status.HTTP_400_BAD_REQUEST)
 
     def get(self, request, pk):

@@ -99,21 +99,20 @@ class LatestQuestionView(APIView):
         date = datetime.datetime.now(pytz.utc)
         questions = Question.objects.all()
         serializer = QuestionSerializer(questions, many=True)
-        return Response({"message":serializer.data[-1]}, status=status.HTTP_200_OK)
-        # min = 1000
-        # if len(questions)==0:
-        #     return Response({"message":"No questions found"}, status=status.HTTP_204_NO_CONTENT)
-        # result = questions[0]
-        # for question in questions:
-        #     quest_date = question.date_time
-        #     diff = (date - quest_date).seconds
-        #     print(diff)
-        #     if diff<min:
-        #         min = diff
-        #         result = question
+        min = 1000
+        if len(questions)==0:
+            return Response({"message":"No questions found"}, status=status.HTTP_204_NO_CONTENT)
+        result = questions[0]
+        for question in questions:
+            quest_date = question.date_time
+            diff = (date - quest_date).seconds
+            print(diff)
+            if diff<min:
+                min = diff
+                result = question
         
-        # if result:
-        #     serializer = QuestionSerializer(result)
-        #     return Response({"message":"Latest Question", "Question":serializer.data}, status=status.HTTP_200_OK)
-        # else:
-        #     return Response({"message":"No questions found"}, status=status.HTTP_204_NO_CONTENT)
+        if result:
+            serializer = QuestionSerializer(result)
+            return Response({"message":"Latest Question", "Question":serializer.data}, status=status.HTTP_200_OK)
+        else:
+            return Response({"message":"No questions found"}, status=status.HTTP_204_NO_CONTENT)

@@ -320,7 +320,7 @@ class LeaderBoardView(APIView):
             user_data = {
                 "username":user.username,
                 "platform":user.platform,
-                "marks":marks * 100
+                "marks":marks * 10
             }
             result.append(user_data)
         result = sorted(result, key=lambda k: k['marks'], reverse=True)

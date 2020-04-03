@@ -101,7 +101,7 @@ class LatestQuestionView(APIView):
         serializer = QuestionSerializer(questions, many=True)
         result = serializer.data
         if len(result)!=0:
-            return Response({"message":"Latest Question", "Question":result[-1]}, status=status.HTTP_200_OK)
+            return Response({"message":"Latest Question", "Question":result[0]}, status=status.HTTP_200_OK)
         else:
             return Response({"message":"No questions found"}, status=status.HTTP_204_NO_CONTENT)
         # min = 1000

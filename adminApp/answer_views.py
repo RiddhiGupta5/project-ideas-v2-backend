@@ -235,7 +235,18 @@ class ExcelSheetView(APIView):
             answer_body = record.get('answer_body', None)
             if answer_body=="":
                 answer_body=None
+
+            #####   MARKS   ########
+            evaluated = False
+            marks = record.get('marks', None)
+            if marks=="":
+                marks = 0
+                evaluated = False
+            else:
+                marks = 1
+                evaluated = True
             platform = 1
+            
 
             user = User.objects.filter(Q(username__iexact=username) & Q(email=email))
             if len(user)!=0:
@@ -250,11 +261,16 @@ class ExcelSheetView(APIView):
                     print("LOGS: QUESTION -> Question Not Found")
                     continue
                 user = user[0]
+                
+                
+
                 answer = {
                     "answer_type":0,
                     "answer_body":answer_body,
                     "daily_challenge":question.id,
-                    "user_id":user.id
+                    "user_id":user.id,
+                    "marks":marks,
+                    "evaluated":evaluated
                 }
                 
             else:
@@ -283,7 +299,9 @@ class ExcelSheetView(APIView):
                         "answer_type":0,
                         "answer_body":answer_body,
                         "daily_challenge":question.id,
-                        "user_id":user.id
+                        "user_id":user.id,
+                        "marks":marks,
+                        "evaluated":evaluated
                     }
                 else:
                     print("LOGS: USER -> Invalid user username = " + username)
@@ -297,6 +315,9 @@ class ExcelSheetView(APIView):
                 serializer = AnswerSerializer(data=answer)
                 if serializer.is_valid():
                     serializer.save()
+                    new_answer = Answer.objects.get(user_id=answer['user_id'], daily_challenge=question.id)
+                    new_answer.evaluated = evaluated
+                    new_answer.save()
                     print("LOGS: ANSWER -> Answer stored for " + username)
                 else:
                     print("LOGS: ANSWER -> Invalid Answer of " + username)

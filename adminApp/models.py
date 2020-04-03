@@ -5,6 +5,9 @@ class Question(models.Model):
     question_body = models.TextField()
     date_time = models.DateTimeField(auto_now_add=True)
 
+    class Meta:
+        ordering = ['-date_time']
+
 class Answer(models.Model):
     # 0 - Daily Challenges
     # 1 - Weekly challenges

@@ -109,9 +109,16 @@ class AllAnswersView(APIView):
             answers = Answer.objects.all()
             if len(answers) == 0:
                 return Response({"message":"No Answers Found"}, status=status.HTTP_204_NO_CONTENT)
+
+            response = []
+            for answer in answers:
+                user = answer.user_id
+                serializer = AnswerSerializer(answer)
+                serializer = serializer.data
+                serializer['username'] = user.username
+                response.append(serializer)            
             
-            serializer = AnswerSerializer(answers, many=True)
-            return Response({"message":serializer.data}, status=status.HTTP_200_OK)
+            return Response({"message":response}, status=status.HTTP_200_OK)
         else:
             return Response({"message":"Not an Admin"}, status=status.HTTP_403_FORBIDDEN)  
 
@@ -131,8 +138,15 @@ class UnevaluatedAnswersView(APIView):
             if len(answers) == 0:
                 return Response({"message":"No Answers Found"}, status=status.HTTP_204_NO_CONTENT)
             
-            serializer = AnswerSerializer(answers, many=True)
-            return Response({"message":serializer.data}, status=status.HTTP_200_OK)
+            response = []
+            for answer in answers:
+                user = answer.user_id
+                serializer = AnswerSerializer(answer)
+                serializer = serializer.data
+                serializer['username'] = user.username
+                response.append(serializer)            
+            
+            return Response({"message":response}, status=status.HTTP_200_OK)
         else:
             return Response({"message":"Not an Admin"}, status=status.HTTP_403_FORBIDDEN)
 

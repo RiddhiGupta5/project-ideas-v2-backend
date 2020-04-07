@@ -55,7 +55,7 @@ class AnswerView(APIView):
 
         trial = AnswerSerializer(answer, many=True)
 
-        print(trial)
+        print(trial.data)
 
         if len(answer)!=0:
             answer = answer[0]

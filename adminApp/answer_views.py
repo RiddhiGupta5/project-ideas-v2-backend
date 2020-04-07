@@ -53,6 +53,8 @@ class AnswerView(APIView):
         else:
             answer = Answer.objects.filter(Q(user_id=user.id) & Q(weekly_challenge=req_data['weekly_challenge']))
 
+        print(answer)
+
         if len(answer)!=0:
             answer = answer[0]
             if answer.answer_type==1 and req_data['answer_body']!=None and answer.evaluated==False:

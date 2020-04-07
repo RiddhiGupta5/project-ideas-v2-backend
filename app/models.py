@@ -57,7 +57,7 @@ class UserToken(models.Model):
 
 class SocialMediaDetails(models.Model):
     platform_name = models.CharField(max_length=20)
-    user_email = models.EmailField()
+    user_email = models.EmailField(null=True, default=None)
     user_id = models.ForeignKey(User, on_delete=models.CASCADE)
     social_user_id = models.CharField(max_length=500)
 

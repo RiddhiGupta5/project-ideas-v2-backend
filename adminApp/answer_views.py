@@ -42,6 +42,8 @@ class AnswerView(APIView):
         print(req_data['weekly_challenge'])
         print(req_data['user_id'])
 
+        
+
         if req_data['daily_challenge'] and req_data['weekly_challenge']:
             print("Both are None")
             return Response({"message":"Invlaid Answer"}, status=status.HTTP_400_BAD_REQUEST)
@@ -52,6 +54,13 @@ class AnswerView(APIView):
         if len(answer)!=0:
             answer = answer[0]
             if answer.answer_type==1 and req_data['answer_body']!=None and answer.evaluated==False:
+                temp = req_data['answer_body'].split(",")
+                empty = True
+                for link in temp:
+                    if link!="" and link!=" ":
+                        empty = False
+                if empty:
+                    return Response({"message":"Please enter answer"}, status=status.HTTP_400_BAD_REQUEST)
                 answer.answer_body = req_data['answer_body']
                 answer.save()
                 serializer = AnswerSerializer(answer)

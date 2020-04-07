@@ -53,7 +53,9 @@ class AnswerView(APIView):
         else:
             answer = Answer.objects.filter(Q(user_id=user.id) & Q(weekly_challenge=req_data['weekly_challenge']))
 
-        print(answer)
+        trial = AnswerSerializer(answer, many=True)
+
+        print(trial)
 
         if len(answer)!=0:
             answer = answer[0]

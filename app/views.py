@@ -43,7 +43,7 @@ from .voteAndCommentViews import (
 load_dotenv()
 
 def social_media_details(user, platform_name, social_user_id):
-    record = SocialMediaDetails.objects.filter(Q(platform_name=platform_name) & Q(user_email=user.email))
+    record = SocialMediaDetails.objects.filter(Q(platform_name=platform_name) & Q(user_id=user.id))
     temp = SocialMediaDetailsSerializer(record, many=True)
     print(temp.data)
     if len(record)==0:

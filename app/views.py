@@ -324,7 +324,11 @@ class LoginSignup(APIView):
         print("&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&")
         print(req_data)
         print("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$")
-        user = User.objects.filter(email=req_data.get('email', None))
+        if req_data['platform_name']=='twitter':
+            user = User.objects.filter(username=req_data['username'], email=req_data.get('email', None))
+        else:
+            user = User.objects.filter(email=req_data.get('email', None))
+        
         trial = UserSerializer(user, many=True)
         print(trial.data)
 

@@ -325,7 +325,7 @@ class LoginSignup(APIView):
         print(req_data)
         print("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$")
         if req_data['platform_name']=='twitter':
-            user = User.objects.filter(username=req_data['username'], email=req_data.get('email', None))
+            user = User.objects.filter(username=req_data['username'])
         else:
             user = User.objects.filter(email=req_data.get('email', None))
         

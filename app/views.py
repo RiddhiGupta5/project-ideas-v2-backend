@@ -44,7 +44,10 @@ load_dotenv()
 
 def social_media_details(user, platform_name, social_user_id):
     record = SocialMediaDetails.objects.filter(Q(platform_name=platform_name) & Q(user_email=user.email))
+    temp = SocialMediaDetailsSerializer(record, many=True)
+    print(temp.data)
     if len(record)==0:
+        print("New record")
         data = {
             "platform_name":platform_name,
             "user_email": user.email,
@@ -53,6 +56,7 @@ def social_media_details(user, platform_name, social_user_id):
         }
         serializer = SocialMediaDetailsSerializer(data=data)
         if serializer.is_valid():
+            print("IT is valid")
             serializer.save()
 
 
@@ -310,8 +314,6 @@ class LoginSignup(APIView):
             data=data
         )
 
-        print(resp.json())
-
         if not resp.json().get('success'):
             return Response(data={'error': 'ReCAPTCHA not verified.'}, status=status.HTTP_406_NOT_ACCEPTABLE)
 
@@ -319,11 +321,18 @@ class LoginSignup(APIView):
         if req_data.get("platform", None)==None:
             req_data['platform'] = 0
         
+        print("&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&")
+        print(req_data)
+        print("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$")
         user = User.objects.filter(email=req_data.get('email', None))
+        trial = UserSerializer(user, many=True)
+        print(trial.data)
+
         if len(user)==0:
-            serializer = UserSerializer(data=req_data)       
-            print(req_data)
+            print("creating new user")
+            serializer = UserSerializer(data=req_data)  
             if serializer.is_valid():
+                print("Everythong is valid")
                 serializer.save()
                 user = User.objects.filter(Q(username__iexact=req_data['username']) & Q(email=req_data.get('email', None)))
                 user = user[0]
@@ -353,14 +362,17 @@ class LoginSignup(APIView):
                     social_media_details(user, req_data.get('platform_name', None), req_data.get('social_user_id', None))
                     return Response({"message":"User Signed up successfully", "User":req_data}, status=status.HTTP_201_CREATED)
             else:
+                print(serializer.errors)
                 return Response({"message":serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
         else:
+            print("User already there")
             user = user[0]
             if req_data.get("password", None)==None:
                 req_data['password'] = " "
             m = hashlib.md5()     
             m.update(req_data['password'].encode("utf-8"))
             if user.password == str(m.digest()):
+                print("password is correct")
                 token = get_token({
                     "username":user.username,
                     "platform":user.platform,
@@ -390,4 +402,5 @@ class LoginSignup(APIView):
                         "token":token
                     }})
             else:
+                print("Invalid password")
                 return Response({"message":"Invalid Password"}, status=status.HTTP_403_FORBIDDEN)              

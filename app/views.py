@@ -314,8 +314,8 @@ class LoginSignup(APIView):
             data=data
         )
 
-        # if not resp.json().get('success'):
-        #     return Response(data={'error': 'ReCAPTCHA not verified.'}, status=status.HTTP_406_NOT_ACCEPTABLE)
+        if not resp.json().get('success'):
+            return Response(data={'error': 'ReCAPTCHA not verified.'}, status=status.HTTP_406_NOT_ACCEPTABLE)
 
         req_data = request.data
         if req_data.get("platform", None)==None:

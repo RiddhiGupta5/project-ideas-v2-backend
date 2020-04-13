@@ -29,6 +29,7 @@ class User(models.Model):
 
 class Idea(models.Model):
     keys = {"PENDING":0, "PUBLISHED":1, "REJECTED":2}
+    user_id = models.ForeignKey(User, on_delete=models.CASCADE)
     project_title = models.CharField(max_length=60)
     project_description = models.TextField()
     tags = models.CharField(max_length=300)

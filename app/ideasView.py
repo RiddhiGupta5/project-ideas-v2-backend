@@ -30,7 +30,7 @@ class PostIdeaView(APIView):
         
         user = get_user(token)
         if user is None:
-            return Response({"message":"User Not Allowed"}, status=status.HTTP_403_FORBIDDEN)
+            return Response({"message":"You need to login to perform this action !"}, status=status.HTTP_403_FORBIDDEN)
 
         data = {}
         data['project_title'] = request.data.get("project_title", None)

@@ -34,7 +34,7 @@ class VoteView(APIView):
         
         user = get_user(token)
         if user is None:
-            return Response({"message":"User Not Allowed"}, status=status.HTTP_403_FORBIDDEN)
+            return Response({"message":"You need to login to perform this action !"}, status=status.HTTP_403_FORBIDDEN)
 
         # Checking if the idea with idea_id exists
         try:
@@ -115,7 +115,7 @@ class CommentView(APIView):
         
         user = get_user(token)
         if user is None:
-            return Response({"message":"User Not Allowed"}, status=status.HTTP_403_FORBIDDEN)
+            return Response({"message":"You need to login to perform this action !"}, status=status.HTTP_403_FORBIDDEN)
 
         request.data['user_id'] = user.id
         

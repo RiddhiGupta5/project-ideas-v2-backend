@@ -150,7 +150,12 @@ class UnpublishedIdeas(APIView):
         if user.is_superuser==True:
             ideas = list(Idea.objects.filter(is_reviewed=keys['PENDING']))
             serializer = IdeaSerializer(ideas, many=True)
-            return Response({"message":serializer.data}, status=status.HTTP_200_OK)
+            serializer_data = serializer.data
+            for idea in serializer_data:
+                user = User.objects.get(id=idea['user_id'])
+                idea['username'] = user.username
+
+            return Response({"message":serializer_data}, status=status.HTTP_200_OK)
         else:
             return Response({"message":"Not an Admin"}, status=status.HTTP_403_FORBIDDEN)            
 
@@ -198,7 +203,12 @@ class RejectedIdeasView(APIView):
         if user.is_superuser==True:
             ideas = list(Idea.objects.filter(is_reviewed=keys['REJECTED']))
             serializer = IdeaSerializer(ideas, many=True)
-            return Response({"message":serializer.data}, status=status.HTTP_200_OK)
+            serializer_data = serializer.data
+            for idea in serializer_data:
+                user = User.objects.get(id=idea['user_id'])
+                idea['username'] = user.username
+
+            return Response({"message":serializer_data}, status=status.HTTP_200_OK)
         else:
             return Response({"message":"Not an Admin"}, status=status.HTTP_403_FORBIDDEN)            
 
@@ -219,7 +229,12 @@ class AllIdeasView(APIView):
         if user.is_superuser==True:
             ideas = list(Idea.objects.all())
             serializer = IdeaSerializer(ideas, many=True)
-            return Response({"message":serializer.data}, status=status.HTTP_200_OK)
+            serializer_data = serializer.data
+            for idea in serializer_data:
+                user = User.objects.get(id=idea['user_id'])
+                idea['username'] = user.username
+
+            return Response({"message":serializer_data}, status=status.HTTP_200_OK)
         else:
             return Response({"message":"Not an Admin"}, status=status.HTTP_403_FORBIDDEN)
 
@@ -230,7 +245,7 @@ class SearchAllIdeaByContent(APIView):
 
         text = request.query_params.get("text", None)
         print(text)
-        all_ideas = list(Idea.objects.filter(Q(project_title__icontains=text) | Q(project_description__icontains=text)).all())
+        all_ideas = list(Idea.objects.filter(Q(project_title__icontains=text) | Q(project_description__icontains=text)  | Q(tags__icontains=text)).all())
         search_result = all_ideas
         
         if len(search_result)==0:

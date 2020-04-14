@@ -14,7 +14,8 @@ from app.serializers import (
 from .models import (
     Idea,
     Comment,
-    Vote
+    Vote,
+    User
 )
 
 
@@ -93,10 +94,15 @@ class CommentView(APIView):
 
             # Adding child comment for each thread
             for resp in response:
+                user = User.objects.get(id = resp['user_id'])
+                resp['username'] = user.username
                 resp['child_comments'] = None
                 child_comments = list(Comment.objects.filter(parent_comment_id=resp['id'], idea_id=pk))
                 child_comment_serializer = CommentSerializer(child_comments, many=True)
                 resp['child_comments'] = child_comment_serializer.data
+                for comm in resp['child_comments']:
+                    user = User.objects.get(id = resp['user_id'])
+                    comm['username'] = user.username
         
             return Response({"message":response}, status=status.HTTP_200_OK)
 

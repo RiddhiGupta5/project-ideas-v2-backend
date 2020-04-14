@@ -35,21 +35,44 @@ class AnswerView(APIView):
         req_data['daily_challenge'] = request.data.get("daily_challenge", None)
         req_data['weekly_challenge'] = request.data.get("weekly_challenge", None)
         req_data['user_id'] = user.id
+        
+        print(req_data['answer_body'])
+        print(req_data['answer_type'])
+        print(req_data['daily_challenge'])
+        print(req_data['weekly_challenge'])
+        print(req_data['user_id'])
+
+        
 
         if req_data['daily_challenge'] and req_data['weekly_challenge']:
+            print("Both are None")
             return Response({"message":"Invlaid Answer"}, status=status.HTTP_400_BAD_REQUEST)
 
-        answer = Answer.objects.filter(
-            Q(user_id=user.id) & 
-            Q(Q(daily_challenge=req_data['daily_challenge']) | Q(weekly_challenge=req_data['weekly_challenge'])))
+        if req_data['daily_challenge']!=None:
+            answer = Answer.objects.filter(Q(user_id=user.id) & Q(daily_challenge=req_data['daily_challenge']))
+        else:
+            answer = Answer.objects.filter(Q(user_id=user.id) & Q(weekly_challenge=req_data['weekly_challenge']))
+
+        trial = AnswerSerializer(answer, many=True)
+
+        print(trial.data)
+
         if len(answer)!=0:
             answer = answer[0]
             if answer.answer_type==1 and req_data['answer_body']!=None and answer.evaluated==False:
+                temp = req_data['answer_body'].split(",")
+                empty = True
+                for link in temp:
+                    if link!="" and link!=" ":
+                        empty = False
+                if empty:
+                    return Response({"message":"Please enter answer"}, status=status.HTTP_400_BAD_REQUEST)
                 answer.answer_body = req_data['answer_body']
                 answer.save()
                 serializer = AnswerSerializer(answer)
                 return Response({"message":"Answer saved", "Answer":serializer.data}, status=status.HTTP_200_OK)
             else:
+                print("Already Answered")
                 return Response({"message":"Already Answered"}, status=status.HTTP_400_BAD_REQUEST)
 
         serializer = AnswerSerializer(data=req_data)
@@ -57,6 +80,7 @@ class AnswerView(APIView):
             serializer.save()
             return Response({"message":"Answer Saved", "Answer":serializer.data}, status=status.HTTP_200_OK)
         else:
+            print(serializer.errors)
             return Response({"message":"Invalid Answer"}, status=status.HTTP_400_BAD_REQUEST)
 
     def get(self, request, pk):
@@ -91,9 +115,16 @@ class AllAnswersView(APIView):
             answers = Answer.objects.all()
             if len(answers) == 0:
                 return Response({"message":"No Answers Found"}, status=status.HTTP_204_NO_CONTENT)
+
+            response = []
+            for answer in answers:
+                user = answer.user_id
+                serializer = AnswerSerializer(answer)
+                serializer = serializer.data
+                serializer['username'] = user.username
+                response.append(serializer)            
             
-            serializer = AnswerSerializer(answers, many=True)
-            return Response({"message":serializer.data}, status=status.HTTP_200_OK)
+            return Response({"message":response}, status=status.HTTP_200_OK)
         else:
             return Response({"message":"Not an Admin"}, status=status.HTTP_403_FORBIDDEN)  
 
@@ -113,8 +144,15 @@ class UnevaluatedAnswersView(APIView):
             if len(answers) == 0:
                 return Response({"message":"No Answers Found"}, status=status.HTTP_204_NO_CONTENT)
             
-            serializer = AnswerSerializer(answers, many=True)
-            return Response({"message":serializer.data}, status=status.HTTP_200_OK)
+            response = []
+            for answer in answers:
+                user = answer.user_id
+                serializer = AnswerSerializer(answer)
+                serializer = serializer.data
+                serializer['username'] = user.username
+                response.append(serializer)            
+            
+            return Response({"message":response}, status=status.HTTP_200_OK)
         else:
             return Response({"message":"Not an Admin"}, status=status.HTTP_403_FORBIDDEN)
 
@@ -226,7 +264,18 @@ class ExcelSheetView(APIView):
             answer_body = record.get('answer_body', None)
             if answer_body=="":
                 answer_body=None
+
+            #####   MARKS   ########
+            evaluated = False
+            marks = record.get('marks', None)
+            if marks=="":
+                marks = 0
+                evaluated = False
+            else:
+                marks = int(marks)
+                evaluated = True
             platform = 1
+            
 
             user = User.objects.filter(Q(username__iexact=username) & Q(email=email))
             if len(user)!=0:
@@ -241,11 +290,16 @@ class ExcelSheetView(APIView):
                     print("LOGS: QUESTION -> Question Not Found")
                     continue
                 user = user[0]
+                
+                
+
                 answer = {
                     "answer_type":0,
                     "answer_body":answer_body,
                     "daily_challenge":question.id,
-                    "user_id":user.id
+                    "user_id":user.id,
+                    "marks":marks,
+                    "evaluated":evaluated
                 }
                 
             else:
@@ -274,7 +328,9 @@ class ExcelSheetView(APIView):
                         "answer_type":0,
                         "answer_body":answer_body,
                         "daily_challenge":question.id,
-                        "user_id":user.id
+                        "user_id":user.id,
+                        "marks":marks,
+                        "evaluated":evaluated
                     }
                 else:
                     print("LOGS: USER -> Invalid user username = " + username)
@@ -288,6 +344,9 @@ class ExcelSheetView(APIView):
                 serializer = AnswerSerializer(data=answer)
                 if serializer.is_valid():
                     serializer.save()
+                    new_answer = Answer.objects.get(user_id=answer['user_id'], daily_challenge=question.id)
+                    new_answer.evaluated = evaluated
+                    new_answer.save()
                     print("LOGS: ANSWER -> Answer stored for " + username)
                 else:
                     print("LOGS: ANSWER -> Invalid Answer of " + username)
@@ -302,25 +361,36 @@ class LeaderBoardView(APIView):
         result = []
         users = User.objects.all()
         for user in users:
-            answers = Answer.objects.filter(user_id=user.id)
+            answers = Answer.objects.filter(Q(user_id=user.id) & Q(evaluated=True))
             marks = 0
+            if len(answers) == 0:
+                continue
             for answer in answers:
                 marks = marks + answer.marks
             user_data = {
                 "username":user.username,
                 "platform":user.platform,
-                "marks":marks * 100
+                "marks":marks * 10
             }
             result.append(user_data)
         result = sorted(result, key=lambda k: k['marks'], reverse=True)
-        last_marks = result[0]['marks']
-        key = 1
-        last_position = 1
+
         admin = None
-        toppers = [1, 2, 3]
         for item in result:
             if item['username']==os.getenv('ADMIN_USERNAME'):
                 admin = item
+        if admin:
+            result.remove(admin)
+        
+        if len(result)==0:
+            return Response({"message":result}, status=status.HTTP_200_OK)
+            
+        last_marks = result[0]['marks']
+        key = 1
+        last_position = 1
+        toppers = [1, 2, 3]        
+
+        for item in result:
             item['key'] = key
             key = key + 1
             if last_marks==item['marks']:
@@ -338,6 +408,7 @@ class LeaderBoardView(APIView):
                     item['topper'] = 0
 
             last_marks = item['marks']
-        result.remove(admin)
+
+        
         return Response({"message":result}, status=status.HTTP_200_OK)
         

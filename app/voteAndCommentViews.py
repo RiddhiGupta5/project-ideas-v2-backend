@@ -54,7 +54,7 @@ class VoteView(APIView):
             check2 = (vote.vote_type==keys["DOWNVOTE"] and int(req_data['vote_type'])==keys["DOWNVOTE"])
 
             if check1 or check2:
-                return Response({"message":"User has already Voted"}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({"message":"You have already Voted"}, status=status.HTTP_400_BAD_REQUEST)
             else:
                 # Updating votes in idea as well as vote object
                 idea.votes = idea.votes + int(req_data['vote_type'])
@@ -62,7 +62,7 @@ class VoteView(APIView):
                 vote.vote_type = req_data["vote_type"]
                 vote.save()
                 idea_serializer = IdeaSerializer(idea)
-                return Response({"message":"Voted Successfully", "idea":idea_serializer.data}, status=status.HTTP_200_OK)
+                return Response(status=status.HTTP_200_OK)
 
         except Vote.DoesNotExist:
             # Updating Votes for idea and creating a new idea object
@@ -74,7 +74,7 @@ class VoteView(APIView):
             vote.vote_type = req_data["vote_type"]
             vote.save()
             idea_serializer = IdeaSerializer(idea)
-            return Response({"message":"Voted Successfully", "idea":idea_serializer.data}, status=status.HTTP_200_OK)
+            return Response(status=status.HTTP_200_OK)
 
 
 # View for posting a comment for an idea and also getting comments for idea

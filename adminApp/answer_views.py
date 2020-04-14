@@ -272,7 +272,7 @@ class ExcelSheetView(APIView):
                 marks = 0
                 evaluated = False
             else:
-                marks = 1
+                marks = int(marks)
                 evaluated = True
             platform = 1
             

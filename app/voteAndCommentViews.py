@@ -101,8 +101,8 @@ class CommentView(APIView):
                 child_comment_serializer = CommentSerializer(child_comments, many=True)
                 resp['child_comments'] = child_comment_serializer.data
                 for comm in resp['child_comments']:
-                    user = User.objects.get(id = resp['user_id'])
-                    comm['username'] = user.username
+                    childUser = User.objects.get(id = comm['user_id'])
+                    comm['username'] = childUser.username
         
             return Response({"message":response}, status=status.HTTP_200_OK)
 

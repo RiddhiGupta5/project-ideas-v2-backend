@@ -65,21 +65,21 @@ class SocialLoginView(APIView):
 
     def post(self, request):
         #Validating and getting data from request
-        secret_key = os.getenv("GOOGLE_RECAPTCHA_SECRET")
-        data={
-            'secret': secret_key,
-            'response': request.data.get('g-recaptcha-response', None)
-        }
+        # secret_key = os.getenv("GOOGLE_RECAPTCHA_SECRET")
+        # data={
+        #     'secret': secret_key,
+        #     'response': request.data.get('g-recaptcha-response', None)
+        # }
 
-        resp = requests.post(
-            'https://www.google.com/recaptcha/api/siteverify',
-            data=data
-        )
+        # resp = requests.post(
+        #     'https://www.google.com/recaptcha/api/siteverify',
+        #     data=data
+        # )
 
-        print(resp.json())
+        # print(resp.json())
 
-        if not resp.json().get('success'):
-            return Response(data={'error': 'ReCAPTCHA not verified.'}, status=status.HTTP_406_NOT_ACCEPTABLE)
+        # if not resp.json().get('success'):
+        #     return Response(data={'error': 'ReCAPTCHA not verified.'}, status=status.HTTP_406_NOT_ACCEPTABLE)
 
         req_data = request.data
         serializer = SocialSerializer(data=request.data)
@@ -303,19 +303,19 @@ class LoginSignup(APIView):
 
     def post(self, request):
 
-        # secret_key = os.getenv("GOOGLE_RECAPTCHA_SECRET")
-        # data={
-        #     'secret': secret_key,
-        #     'response': request.data.get('g-recaptcha-response', None)
-        # }
+        secret_key = os.getenv("GOOGLE_RECAPTCHA_SECRET")
+        data={
+            'secret': secret_key,
+            'response': request.data.get('g-recaptcha-response', None)
+        }
 
-        # resp = requests.post(
-        #     'https://www.google.com/recaptcha/api/siteverify',
-        #     data=data
-        # )
+        resp = requests.post(
+            'https://www.google.com/recaptcha/api/siteverify',
+            data=data
+        )
 
-        # if not resp.json().get('success'):
-        #     return Response(data={'error': 'ReCAPTCHA not verified.'}, status=status.HTTP_406_NOT_ACCEPTABLE)
+        if not resp.json().get('success'):
+            return Response(data={'error': 'ReCAPTCHA not verified.'}, status=status.HTTP_406_NOT_ACCEPTABLE)
 
         req_data = request.data
         if req_data.get("platform", None)==None:

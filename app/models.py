@@ -38,6 +38,9 @@ class Idea(models.Model):
     reviewer_id = models.ForeignKey(User, on_delete=models.CASCADE, blank=True, null=True, related_name="admin_id_idea")
     date_time = models.DateTimeField(auto_now_add=True)
 
+    class Meta:
+        ordering = ['-votes']
+
 class Comment(models.Model):
     body = models.TextField()
     parent_comment_id = models.IntegerField(null=True)

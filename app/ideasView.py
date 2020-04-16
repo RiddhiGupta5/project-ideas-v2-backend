@@ -50,14 +50,27 @@ class PostIdeaView(APIView):
 class PublishedIdeasView(APIView):
 
     def get(self, request):
+
+        offset = request.query_params.get('offset', None)
+        if offset!=None and offset!="":
+            offset = int(offset)
+            start = offset * 5
+            end = (offset + 1) * 5
+
         keys = {"PENDING":0, "PUBLISHED":1, "REJECTED":2}
         ideas = list(Idea.objects.filter(is_reviewed=keys["PUBLISHED"]))
         serializers = (IdeaSerializer(ideas, many=True))
 
         if len(ideas) == 0:
-            return Response({"message":"No Published Ideas found"}, status=status.HTTP_204_NO_CONTENT)
+            return Response({"message":"No Published Ideas Found"}, status=status.HTTP_204_NO_CONTENT)
 
-        serializer_data = serializers.data
+        if offset==None or offset=="":
+            serializer_data = serializers.data
+        else:
+            serializer_data = serializers.data[start:end]
+
+        if len(serializer_data)==0:
+            return Response({"message":"No Published Ideas Found"}, status=status.HTTP_204_NO_CONTENT)        
 
         for idea in serializer_data:
             user = User.objects.get(id=idea['user_id'])
@@ -82,6 +95,13 @@ class ViewIdea(APIView):
 class SearchIdeaByContent(APIView):
 
     def get(self, request):
+
+        offset = request.query_params.get('offset', None)
+        if offset!=None and offset!="":
+            offset = int(offset)
+            start = offset * 5
+            end = (offset + 1) * 5
+
         keys = {"PENDING":0, "PUBLISHED":1, "REJECTED":2}
         text = request.query_params.get("text", None)
         print(text)
@@ -94,7 +114,14 @@ class SearchIdeaByContent(APIView):
             return Response({"message":"No Idea found"}, status=204)
 
         serializer = IdeaSerializer(search_result, many=True)
-        serializer_data = serializer.data
+
+        if offset==None or offset=="":
+            serializer_data = serializer.data
+        else:
+            serializer_data = serializer.data[start:end]
+
+        if len(serializer_data)==0:
+            return Response({"message":"No Idea Found"}, status=status.HTTP_204_NO_CONTENT)   
 
         for idea in serializer_data:
             user = User.objects.get(id=idea['user_id'])

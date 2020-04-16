@@ -81,6 +81,13 @@ class VoteView(APIView):
 class CommentView(APIView):
 
     def get(self, request, pk):
+
+        offset = request.query_params.get('offset', None)
+        if offset!=None and offset!="":
+            offset = int(offset)
+            start = offset * 5
+            end = (offset + 1) * 5
+
         # Getting all comments
         comments = list(Comment.objects.filter(idea_id=pk))
         response = []
@@ -90,7 +97,14 @@ class CommentView(APIView):
             # Adding parent comment for each thread
             comments = list(Comment.objects.filter(parent_comment_id=None, idea_id=pk))
             serializer = CommentSerializer(comments, many=True)
-            response = serializer.data
+
+            if offset==None or offset=="":
+                response = serializer.data
+            else:
+                response = serializer.data[start:end]
+
+            if len(response)==0:
+                return Response({"message":"There are no comments"}, status=status.HTTP_204_NO_CONTENT)
 
             # Adding child comment for each thread
             for resp in response:

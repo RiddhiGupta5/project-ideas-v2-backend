@@ -146,11 +146,25 @@ class UnpublishedIdeas(APIView):
         if user is None:
             return Response({"message":"User Already Logged Out"}, status=status.HTTP_403_FORBIDDEN)
 
+        offset = request.query_params.get('offset', None)
+        if offset!=None and offset!="":
+            offset = int(offset)
+            start = offset * 5
+            end = (offset + 1) * 5
+
         keys = {"PENDING":0, "PUBLISHED":1, "REJECTED":2}
         if user.is_superuser==True:
             ideas = list(Idea.objects.filter(is_reviewed=keys['PENDING']))
             serializer = IdeaSerializer(ideas, many=True)
-            serializer_data = serializer.data
+            
+            if offset==None or offset=="":
+                serializer_data = serializer.data
+            else:
+                serializer_data = serializer.data[start:end]
+
+            if len(serializer_data)==0:
+                return Response({"message":"No Idea Found"}, status=status.HTTP_204_NO_CONTENT)   
+
             for idea in serializer_data:
                 user = User.objects.get(id=idea['user_id'])
                 idea['username'] = user.username
@@ -197,13 +211,27 @@ class RejectedIdeasView(APIView):
         if user is None:
             return Response({"message":"User Already Logged Out"}, status=status.HTTP_403_FORBIDDEN)
 
+        offset = request.query_params.get('offset', None)
+        if offset!=None and offset!="":
+            offset = int(offset)
+            start = offset * 5
+            end = (offset + 1) * 5
+
         req_data = request.data
         keys = {"PENDING":0, "PUBLISHED":1, "REJECTED":2}
 
         if user.is_superuser==True:
             ideas = list(Idea.objects.filter(is_reviewed=keys['REJECTED']))
             serializer = IdeaSerializer(ideas, many=True)
-            serializer_data = serializer.data
+            
+            if offset==None or offset=="":
+                serializer_data = serializer.data
+            else:
+                serializer_data = serializer.data[start:end]
+
+            if len(serializer_data)==0:
+                return Response({"message":"No Idea Found"}, status=status.HTTP_204_NO_CONTENT)   
+
             for idea in serializer_data:
                 user = User.objects.get(id=idea['user_id'])
                 idea['username'] = user.username
@@ -224,12 +252,26 @@ class AllIdeasView(APIView):
         if user is None:
             return Response({"message":"User Already Logged Out"}, status=status.HTTP_403_FORBIDDEN)
 
+        offset = request.query_params.get('offset', None)
+        if offset!=None and offset!="":
+            offset = int(offset)
+            start = offset * 5
+            end = (offset + 1) * 5
+
         req_data = request.data
 
         if user.is_superuser==True:
             ideas = list(Idea.objects.all())
             serializer = IdeaSerializer(ideas, many=True)
-            serializer_data = serializer.data
+
+            if offset==None or offset=="":
+                serializer_data = serializer.data
+            else:
+                serializer_data = serializer.data[start:end]
+
+            if len(serializer_data)==0:
+                return Response({"message":"No Idea Found"}, status=status.HTTP_204_NO_CONTENT)   
+
             for idea in serializer_data:
                 user = User.objects.get(id=idea['user_id'])
                 idea['username'] = user.username
@@ -243,6 +285,12 @@ class SearchAllIdeaByContent(APIView):
 
     def get(self, request):
 
+        offset = request.query_params.get('offset', None)
+        if offset!=None and offset!="":
+            offset = int(offset)
+            start = offset * 5
+            end = (offset + 1) * 5
+
         text = request.query_params.get("text", None)
         print(text)
         all_ideas = list(Idea.objects.filter(Q(project_title__icontains=text) | Q(project_description__icontains=text)  | Q(tags__icontains=text)).all())
@@ -252,7 +300,14 @@ class SearchAllIdeaByContent(APIView):
             return Response({"message":"No Idea found"}, status=204)
 
         serializer = IdeaSerializer(search_result, many=True)
-        serializer_data = serializer.data
+
+        if offset==None or offset=="":
+            serializer_data = serializer.data
+        else:
+            serializer_data = serializer.data[start:end]
+
+        if len(serializer_data)==0:
+            return Response({"message":"No Idea Found"}, status=status.HTTP_204_NO_CONTENT)   
 
         return Response({"message":serializer_data}, status=status.HTTP_200_OK)
 

@@ -9,7 +9,7 @@ def get_user(token):
     try:
         token = token.split(" ")
         payload = jwt.decode(token[1], os.getenv('JWT_SECRET'), algorithms=['HS256'])
-        user = User.objects.get(username=payload['username'], platform=payload['platform'])
+        user = User.objects.get(username=payload['username'], email=payload['email'], platform=payload['platform'])
         usertoken = UserToken.objects.get(user=user.id)
         return user
     except Exception as error:

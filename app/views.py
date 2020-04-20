@@ -272,7 +272,8 @@ class NormalLoginView(APIView):
                 token = get_token({
                     "username":user.username,
                     "platform":user.platform,
-                    "date_time":str(datetime.datetime.today())
+                    "date_time":str(datetime.datetime.today()),
+                    "email":user.email
                 })
                 try:
                     usertoken = UserToken.objects.get(user=user.id)
@@ -325,7 +326,7 @@ class LoginSignup(APIView):
         print(req_data)
         print("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$")
 
-        user = User.objects.filter(username=req_data.get('username', None))          
+        user = User.objects.filter(Q(username=req_data.get('username', None)) & Q(email=req_data.get('email', None)))          
         
         trial = UserSerializer(user, many=True)
         print(trial.data)
@@ -341,7 +342,8 @@ class LoginSignup(APIView):
                 token = get_token({
                     "username":user.username,
                     "platform":user.platform,
-                    "date_time":str(datetime.datetime.today())
+                    "date_time":str(datetime.datetime.today()),
+                    "email":user.email
                 })
                 req_data['email'] = user.email
                 req_data['token'] = token
@@ -378,7 +380,8 @@ class LoginSignup(APIView):
                 token = get_token({
                     "username":user.username,
                     "platform":user.platform,
-                    "date_time":str(datetime.datetime.today())
+                    "date_time":str(datetime.datetime.today()),
+                    "email":user.email
                 })
                 try:
                     usertoken = UserToken.objects.get(user=user.id)

@@ -109,6 +109,8 @@ class AdminLoginView(APIView):
             return Response({"message":"Admin does not exist"}, status=status.HTTP_403_FORBIDDEN) 
 
 
+# Just a comment
+
 # View to Logout Admin
 class AdminLogoutView(APIView):
 

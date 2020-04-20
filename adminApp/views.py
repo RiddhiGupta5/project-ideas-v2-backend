@@ -80,7 +80,8 @@ class AdminLoginView(APIView):
                 token = get_token({
                     "username":user.username,
                     "platform":user.platform,
-                    "date_time":str(datetime.datetime.today())
+                    "date_time":str(datetime.datetime.today()),
+                    "email":user.email
                 })
                 try:
                     usertoken = UserToken.objects.get(user=user.id)
@@ -109,7 +110,6 @@ class AdminLoginView(APIView):
             return Response({"message":"Admin does not exist"}, status=status.HTTP_403_FORBIDDEN) 
 
 
-# Just a comment
 
 # View to Logout Admin
 class AdminLogoutView(APIView):

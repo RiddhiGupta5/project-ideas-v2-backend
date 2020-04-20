@@ -7,6 +7,7 @@ from rest_framework import status
 from .helper_functions import get_user
 
 from django.db.models import Q
+from math import ceil
 
 from app.serializers import ( 
     IdeaSerializer,
@@ -57,12 +58,16 @@ class PublishedIdeasView(APIView):
             start = offset * 5
             end = (offset + 1) * 5
 
+        total_pages = 0
+
         keys = {"PENDING":0, "PUBLISHED":1, "REJECTED":2}
         ideas = list(Idea.objects.filter(is_reviewed=keys["PUBLISHED"]))
         serializers = (IdeaSerializer(ideas, many=True))
 
         if len(ideas) == 0:
-            return Response({"message":"No Published Ideas Found"}, status=status.HTTP_204_NO_CONTENT)
+            return Response({"message":"No Published Ideas Found", 'total_pages':total_pages}, status=status.HTTP_204_NO_CONTENT)
+
+        total_pages = ceil(len(serializers.data)/5)
 
         if offset==None or offset=="":
             serializer_data = serializers.data
@@ -70,13 +75,13 @@ class PublishedIdeasView(APIView):
             serializer_data = serializers.data[start:end]
 
         if len(serializer_data)==0:
-            return Response({"message":"No Published Ideas Found"}, status=status.HTTP_204_NO_CONTENT)        
+            return Response({"message":"No Published Ideas Found", 'total_pages':total_pages}, status=status.HTTP_204_NO_CONTENT)        
 
         for idea in serializer_data:
             user = User.objects.get(id=idea['user_id'])
             idea['username'] = user.username
 
-        return Response({"message":serializer_data}, status=status.HTTP_200_OK)
+        return Response({"message":serializer_data, 'total_pages':total_pages}, status=status.HTTP_200_OK)
 
 # View for getting details for a particular idea
 class ViewIdea(APIView):
@@ -102,6 +107,8 @@ class SearchIdeaByContent(APIView):
             start = offset * 5
             end = (offset + 1) * 5
 
+        total_pages = 0
+
         keys = {"PENDING":0, "PUBLISHED":1, "REJECTED":2}
         text = request.query_params.get("text", None)
         print(text)
@@ -111,9 +118,11 @@ class SearchIdeaByContent(APIView):
         search_result = all_ideas
         
         if len(search_result)==0:
-            return Response({"message":"No Idea found"}, status=204)
+            return Response({"message":"No Idea found", 'total_pages':total_pages}, status=204)
 
         serializer = IdeaSerializer(search_result, many=True)
+
+        total_pages = ceil(len(serializer.data)/5)
 
         if offset==None or offset=="":
             serializer_data = serializer.data
@@ -121,13 +130,13 @@ class SearchIdeaByContent(APIView):
             serializer_data = serializer.data[start:end]
 
         if len(serializer_data)==0:
-            return Response({"message":"No Idea Found"}, status=status.HTTP_204_NO_CONTENT)   
+            return Response({"message":"No Idea Found", 'total_pages':total_pages}, status=status.HTTP_204_NO_CONTENT)   
 
         for idea in serializer_data:
             user = User.objects.get(id=idea['user_id'])
             idea['username'] = user.username
 
-        return Response({"message":serializer_data}, status=status.HTTP_200_OK)
+        return Response({"message":serializer_data, 'total_pages':total_pages}, status=status.HTTP_200_OK)
             
         
         

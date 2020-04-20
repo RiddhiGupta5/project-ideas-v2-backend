@@ -5,6 +5,7 @@ from rest_framework.response import Response
 from rest_framework import status
 
 from .helper_functions import get_user
+from math import ceil
 
 from app.serializers import ( 
     CommentSerializer,
@@ -88,15 +89,19 @@ class CommentView(APIView):
             start = offset * 5
             end = (offset + 1) * 5
 
+        total_pages = 0
+
         # Getting all comments
         comments = list(Comment.objects.filter(idea_id=pk))
         response = []
         if len(comments)==0:
-            return Response({"message":"There are no comments"}, status=status.HTTP_204_NO_CONTENT)
+            return Response({"message":"There are no comments", 'total_pages':total_pages}, status=status.HTTP_204_NO_CONTENT)
         else:
             # Adding parent comment for each thread
             comments = list(Comment.objects.filter(parent_comment_id=None, idea_id=pk))
             serializer = CommentSerializer(comments, many=True)
+
+            total_pages = ceil(len(serializer.data)/5)
 
             if offset==None or offset=="":
                 response = serializer.data
@@ -104,7 +109,7 @@ class CommentView(APIView):
                 response = serializer.data[start:end]
 
             if len(response)==0:
-                return Response({"message":"There are no comments"}, status=status.HTTP_204_NO_CONTENT)
+                return Response({"message":"There are no comments", 'total_pages':total_pages}, status=status.HTTP_204_NO_CONTENT)
 
             # Adding child comment for each thread
             for resp in response:
@@ -118,7 +123,7 @@ class CommentView(APIView):
                     childUser = User.objects.get(id = comm['user_id'])
                     comm['username'] = childUser.username
         
-            return Response({"message":response}, status=status.HTTP_200_OK)
+            return Response({"message":response, 'total_pages':total_pages}, status=status.HTTP_200_OK)
 
 
     def post(self, request):

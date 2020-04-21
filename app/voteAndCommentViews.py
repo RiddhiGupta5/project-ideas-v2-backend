@@ -151,9 +151,9 @@ class CommentView(APIView):
             response = comment.data
             response['username'] = user.username
             if response['parent_comment_id']==None:
-                response['child_comments'] = None
-            else:
                 response['child_comments'] = []
+            else:
+                response['child_comments'] = None                
             return Response({"message":response}, status=status.HTTP_200_OK)
         else:
             return Response({"message":comment.errors}, status=status.HTTP_400_BAD_REQUEST)

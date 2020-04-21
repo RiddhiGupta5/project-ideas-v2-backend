@@ -64,6 +64,8 @@ class PublishedIdeasView(APIView):
         ideas = list(Idea.objects.filter(is_reviewed=keys["PUBLISHED"]))
         serializers = (IdeaSerializer(ideas, many=True))
 
+        
+
         if len(ideas) == 0:
             return Response({"message":"No Published Ideas Found", 'total_pages':total_pages}, status=status.HTTP_204_NO_CONTENT)
 

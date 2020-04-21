@@ -39,7 +39,7 @@ class Idea(models.Model):
     date_time = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        ordering = ['-votes']
+        ordering = ['-votes', '-date_time']
 
 class Comment(models.Model):
     body = models.TextField()
@@ -47,6 +47,9 @@ class Comment(models.Model):
     user_id = models.ForeignKey(User, on_delete=models.CASCADE, related_name="user_id_comment")
     idea_id = models.ForeignKey(Idea, on_delete=models.CASCADE, related_name="idea_id_comment")
     date_time = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-date_time']
 
 class Vote(models.Model):
     vote_type_key = {"UPVOTE":1, "DOWNVOTE":-1}

@@ -116,7 +116,7 @@ class CommentView(APIView):
                 user = User.objects.get(id = resp['user_id'])
                 resp['username'] = user.username
                 resp['child_comments'] = None
-                child_comments = list(Comment.objects.filter(parent_comment_id=resp['id'], idea_id=pk))
+                child_comments = list(Comment.objects.order_by('date_time').filter(parent_comment_id=resp['id'], idea_id=pk))
                 child_comment_serializer = CommentSerializer(child_comments, many=True)
                 resp['child_comments'] = child_comment_serializer.data
                 for comm in resp['child_comments']:

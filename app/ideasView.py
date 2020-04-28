@@ -61,7 +61,7 @@ class PublishedIdeasView(APIView):
         total_pages = 0
 
         keys = {"PENDING":0, "PUBLISHED":1, "REJECTED":2}
-        ideas = list(Idea.objects.filter(is_reviewed=keys["PUBLISHED"]))
+        ideas = list(Idea.objects.filter(is_deleted=False, is_reviewed=keys["PUBLISHED"]))
         serializers = (IdeaSerializer(ideas, many=True))
 
         
@@ -115,7 +115,7 @@ class SearchIdeaByContent(APIView):
         text = request.query_params.get("text", None)
         print(text)
         all_ideas = list(Idea.objects.filter(
-            Q(is_reviewed=keys['PUBLISHED']) & 
+            Q(is_reviewed=keys['PUBLISHED']) & Q(is_deleted=False) &
             (Q(project_title__icontains=text) | Q(project_description__icontains=text) | Q(tags__icontains=text))).all())
         search_result = all_ideas
         
@@ -141,4 +141,104 @@ class SearchIdeaByContent(APIView):
         return Response({"message":serializer_data, 'total_pages':total_pages}, status=status.HTTP_200_OK)
             
         
+class UserIdeaView(APIView):
+
+    def get(self, request):
+        token = request.headers.get('Authorization', None)
+
+        if token is None or token=="":
+            return Response({"message":"Authorization credentials missing"}, status=status.HTTP_403_FORBIDDEN)
         
+        user = get_user(token)
+        if user is None:
+            return Response({"message":"You need to login to perform this action !"}, status=status.HTTP_403_FORBIDDEN)
+
+        offset = request.query_params.get('offset', None)
+        if offset!=None and offset!="":
+            offset = int(offset)
+            start = offset * 5
+            end = (offset + 1) * 5
+
+        total_pages = 0
+
+        user_ideas = Idea.objects.filter(user_id=user.id, is_deleted=False)
+        serializer = IdeaSerializer(user_ideas, many=True)
+        total_pages = ceil(len(serializer.data)/5)
+
+        if offset==None or offset=="":
+            serializer_data = serializer.data
+        else:
+            serializer_data = serializer.data[start:end]
+
+        if len(serializer_data)==0:
+            return Response({"message":"No Idea Found", 'total_pages':total_pages}, status=status.HTTP_204_NO_CONTENT)
+
+        return Response({"message":serializer_data, 'total_pages':total_pages}, status=status.HTTP_200_OK)  
+        
+
+    def delete(self, request, pk):
+        token = request.headers.get('Authorization', None)
+
+        if token is None or token=="":
+            return Response({"message":"Authorization credentials missing"}, status=status.HTTP_403_FORBIDDEN)
+        
+        user = get_user(token)
+        if user is None:
+            return Response({"message":"You need to login to perform this action !"}, status=status.HTTP_403_FORBIDDEN)
+
+        try:
+            idea = Idea.objects.get(id=pk, is_deleted=False)
+            if idea.user_id.id == user.id:
+                idea.is_deleted = True
+                idea.save()
+                serializer = IdeaSerializer(idea)
+                return Response({'message':serializer.data}, status=status.HTTP_200_OK)
+            else:
+                return Response({"message":"You are not allowed to delete this idea!"}, status=status.HTTP_403_FORBIDDEN)
+        except Idea.DoesNotExist:
+            return Response({"message":"Idea not Found"}, status=status.HTTP_400_BAD_REQUEST)
+
+
+    def put(self, request):
+        token = request.headers.get('Authorization', None)
+
+        if token is None or token=="":
+            return Response({"message":"Authorization credentials missing"}, status=status.HTTP_403_FORBIDDEN)
+        
+        user = get_user(token)
+        if user is None:
+            return Response({"message":"You need to login to perform this action !"}, status=status.HTTP_403_FORBIDDEN)
+
+        pk = request.data.get('id', None)
+        project_title = request.data.get('project_title', None)
+        project_description = request.data.get('project_description', None)
+        tags = request.data.get('tags', None)
+
+        if not(pk) or not(project_title) or not(project_description) or not(tags):
+            return Response({"message":"Please Provide all fields"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            idea = Idea.objects.get(id=pk, is_deleted=False)
+            idea_dict = {}
+            if idea.user_id.id == user.id:
+                idea.project_title = project_title
+                idea.project_description = project_description
+                idea.tags = tags
+                idea.is_reviewed = 0
+                idea_dict['project_title'] = project_title
+                idea_dict['project_description'] = project_description
+                idea_dict['tags'] = tags
+                idea_dict['id'] = idea.id
+                idea_dict['is_reviewed'] = 0
+                idea_dict['user_id'] = user.id
+                serializer = IdeaSerializer(data=idea_dict)
+                if serializer.is_valid():
+                    idea.save()
+                    return Response({'message':idea_dict}, status=status.HTTP_200_OK)
+                else:
+                    return Response({'message':serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                return Response({"message":"You are not allowed to delete this idea!"}, status=status.HTTP_403_FORBIDDEN)
+        except Idea.DoesNotExist:
+            return Response({"message":"Idea not Found"}, status=status.HTTP_400_BAD_REQUEST)
+

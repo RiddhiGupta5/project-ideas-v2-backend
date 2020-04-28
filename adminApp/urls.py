@@ -18,7 +18,8 @@ from adminApp.views import (
     LeaderBoardView,
     UnevaluatedAnswersView,
     LatestQuestionView,
-    SocialMediaDetailsView
+    SocialMediaDetailsView,
+    DeletedIdeasView,
 )
 from rest_framework import routers
 
@@ -47,4 +48,5 @@ urlpatterns = [
     path("unevaluated_answers/", UnevaluatedAnswersView.as_view()),
     path("latest_question/", LatestQuestionView.as_view()),    
     path("social_details/", SocialMediaDetailsView.as_view()),
+    path("deleted_ideas/", DeletedIdeasView.as_view()),
 ]

@@ -37,6 +37,7 @@ class Idea(models.Model):
     votes = models.IntegerField(default=0)
     reviewer_id = models.ForeignKey(User, on_delete=models.CASCADE, blank=True, null=True, related_name="admin_id_idea")
     date_time = models.DateTimeField(auto_now_add=True)
+    is_deleted = models.BooleanField(default=False)
 
     class Meta:
         ordering = ['-votes', '-date_time']

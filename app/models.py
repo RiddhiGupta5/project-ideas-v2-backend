@@ -71,3 +71,8 @@ class SocialMediaDetails(models.Model):
 
     class Meta:
         unique_together = ('platform_name', 'user_email')
+
+class UserFCMDevice(models.Model):
+    user_id = models.ForeignKey(User, on_delete=models.CASCADE, unique=True)
+    registration_id = models.TextField()
+    date_time_created = models.DateTimeField(auto_now_add=True)

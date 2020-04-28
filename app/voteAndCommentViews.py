@@ -4,7 +4,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 
-from .helper_functions import get_user
+from .helper_functions import get_user, send_notifs
 from math import ceil
 
 from app.serializers import ( 
@@ -16,7 +16,8 @@ from .models import (
     Idea,
     Comment,
     Vote,
-    User
+    User,
+    UserFCMDevice
 )
 
 
@@ -148,12 +149,48 @@ class CommentView(APIView):
         comment = CommentSerializer(data=request.data)        
         if comment.is_valid():
             comment.save()
+
             response = comment.data
+            registration_ids = []
+
+            # Getting Registration ids
             response['username'] = user.username
+            
+
+            try:
+                ideaUserFCMDevice = UserFCMDevice.objects.get(user_id=idea.user_id.id)
+                if not (user.id==ideaUserFCMDevice.user_id.id):
+                    registration_ids.append(ideaUserFCMDevice.registration_id)
+            except UserFCMDevice.DoesNotExist:
+                pass
+
             if response['parent_comment_id']==None:
+                # Main Thread Comment
                 response['child_comments'] = []
             else:
-                response['child_comments'] = None                
+                # Child Comment
+                response['child_comments'] = None  
+                try:
+                    parentComment = Comment.objects.get(id=response['parent_comment_id'])
+                    parentCommentUserFCMDevice = UserFCMDevice.objects.get(user_id=parentComment.user_id.id)
+                    if not(parentCommentUserFCMDevice.registration_id in registration_ids):
+                        if not(parentCommentUserFCMDevice.user_id.id==user.id):
+                            registration_ids.append(parentCommentUserFCMDevice.registration_id)
+                except UserFCMDevice.DoesNotExist:
+                    pass
+
+            # Sending Notifications
+            message_title = user.username + " Commented"
+            message_body = response['body']
+            data = {
+                "url":"https://ideas.dscvit.com/ideas/" + str(idea.id) + "/"
+            }            
+
+            result = send_notifs(registration_ids, message_title, message_body, data)
+
+            if result:
+                print("Failed to send notification")
+                       
             return Response({"message":response}, status=status.HTTP_200_OK)
         else:
             return Response({"message":comment.errors}, status=status.HTTP_400_BAD_REQUEST)

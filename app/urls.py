@@ -12,7 +12,8 @@ from app.views import (
     NormalLoginView,
     LoginSignup,
     UserIdeaView,
-    FCMRegisterDeviceView
+    FCMRegisterDeviceView,
+    MyCommentsView,
 )
 from rest_framework import routers
 
@@ -35,4 +36,5 @@ urlpatterns = [
     path("user_idea/", UserIdeaView.as_view()),
     path("user_idea/<int:pk>/", UserIdeaView.as_view()),
     path("register_device/", FCMRegisterDeviceView.as_view()),
+    path("user_comments/", MyCommentsView.as_view()),
 ]

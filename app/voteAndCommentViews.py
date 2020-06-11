@@ -194,3 +194,27 @@ class CommentView(APIView):
             return Response({"message":response}, status=status.HTTP_200_OK)
         else:
             return Response({"message":comment.errors}, status=status.HTTP_400_BAD_REQUEST)
+
+class MyCommentsView(APIView):
+
+    def get(self, request):
+        token = request.headers.get('Authorization', None)
+        if token is None or token=="":
+            return Response({"message":"Authorization credentials missing"}, status=status.HTTP_403_FORBIDDEN)
+        
+        user = get_user(token)
+        if user is None:
+            return Response({"message":"You need to login to perform this action !"}, status=status.HTTP_403_FORBIDDEN)
+
+        comments = Comment.objects.filter(user_id=user.id).order_by('-date_time')
+        serializer = CommentSerializer(comments, many=True)
+        serializer = serializer.data
+        if len(serializer)==0:
+            return Response({"message":"No Comments found"}, status=status.HTTP_204_NO_CONTENT)
+        
+        for comment in serializer:
+            comment['idea_title'] = Idea.objects.get(id=comment['idea_id']).project_title
+        
+        return Response({"message":"Comments Found", "comments":serializer}, status=status.HTTP_200_OK)
+        
+

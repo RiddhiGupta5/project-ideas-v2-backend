@@ -40,6 +40,7 @@ from .ideasView import (
 from .voteAndCommentViews import (
     VoteView,
     CommentView,
+    MyCommentsView,
 )
 
 load_dotenv()

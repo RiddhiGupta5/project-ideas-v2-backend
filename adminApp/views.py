@@ -60,7 +60,6 @@ class AdminSignupView(APIView):
 
 # VIew to Login Admin
 class AdminLoginView(APIView):
-    
 
     def post(self, request):
         req_data = {}
@@ -80,7 +79,8 @@ class AdminLoginView(APIView):
                 token = get_token({
                     "username":user.username,
                     "platform":user.platform,
-                    "date_time":str(datetime.datetime.today())
+                    "date_time":str(datetime.datetime.today()),
+                    "email":user.email
                 })
                 try:
                     usertoken = UserToken.objects.get(user=user.id)
@@ -107,6 +107,7 @@ class AdminLoginView(APIView):
                 return Response({"message":"Invalid Password"}, status=status.HTTP_403_FORBIDDEN)
         except User.DoesNotExist:
             return Response({"message":"Admin does not exist"}, status=status.HTTP_403_FORBIDDEN) 
+
 
 
 # View to Logout Admin
@@ -146,11 +147,25 @@ class UnpublishedIdeas(APIView):
         if user is None:
             return Response({"message":"User Already Logged Out"}, status=status.HTTP_403_FORBIDDEN)
 
+        offset = request.query_params.get('offset', None)
+        if offset!=None and offset!="":
+            offset = int(offset)
+            start = offset * 5
+            end = (offset + 1) * 5
+
         keys = {"PENDING":0, "PUBLISHED":1, "REJECTED":2}
         if user.is_superuser==True:
-            ideas = list(Idea.objects.filter(is_reviewed=keys['PENDING']))
+            ideas = list(Idea.objects.filter(is_reviewed=keys['PENDING'], is_deleted=False))
             serializer = IdeaSerializer(ideas, many=True)
-            serializer_data = serializer.data
+            
+            if offset==None or offset=="":
+                serializer_data = serializer.data
+            else:
+                serializer_data = serializer.data[start:end]
+
+            if len(serializer_data)==0:
+                return Response({"message":"No Idea Found"}, status=status.HTTP_204_NO_CONTENT)   
+
             for idea in serializer_data:
                 user = User.objects.get(id=idea['user_id'])
                 idea['username'] = user.username
@@ -197,20 +212,76 @@ class RejectedIdeasView(APIView):
         if user is None:
             return Response({"message":"User Already Logged Out"}, status=status.HTTP_403_FORBIDDEN)
 
+        offset = request.query_params.get('offset', None)
+        if offset!=None and offset!="":
+            offset = int(offset)
+            start = offset * 5
+            end = (offset + 1) * 5
+
         req_data = request.data
         keys = {"PENDING":0, "PUBLISHED":1, "REJECTED":2}
 
         if user.is_superuser==True:
-            ideas = list(Idea.objects.filter(is_reviewed=keys['REJECTED']))
+            ideas = list(Idea.objects.filter(is_reviewed=keys['REJECTED'], is_deleted=False))
             serializer = IdeaSerializer(ideas, many=True)
-            serializer_data = serializer.data
+            
+            if offset==None or offset=="":
+                serializer_data = serializer.data
+            else:
+                serializer_data = serializer.data[start:end]
+
+            if len(serializer_data)==0:
+                return Response({"message":"No Idea Found"}, status=status.HTTP_204_NO_CONTENT)   
+
             for idea in serializer_data:
                 user = User.objects.get(id=idea['user_id'])
                 idea['username'] = user.username
 
             return Response({"message":serializer_data}, status=status.HTTP_200_OK)
         else:
-            return Response({"message":"Not an Admin"}, status=status.HTTP_403_FORBIDDEN)            
+            return Response({"message":"Not an Admin"}, status=status.HTTP_403_FORBIDDEN)  
+
+class DeletedIdeasView(APIView):
+
+    def get(self, request):
+        token = request.headers.get('Authorization', None)
+        if token is None or token=="":
+            return Response({"message":"Authorization credentials missing"}, status=status.HTTP_403_FORBIDDEN)
+        
+        user = get_user(token)
+        if user is None:
+            return Response({"message":"User Already Logged Out"}, status=status.HTTP_403_FORBIDDEN)
+
+        offset = request.query_params.get('offset', None)
+        if offset!=None and offset!="":
+            offset = int(offset)
+            start = offset * 5
+            end = (offset + 1) * 5
+
+        req_data = request.data
+        keys = {"PENDING":0, "PUBLISHED":1, "REJECTED":2}
+
+        if user.is_superuser==True:
+            ideas = list(Idea.objects.filter(is_deleted=True))
+            serializer = IdeaSerializer(ideas, many=True)
+            
+            if offset==None or offset=="":
+                serializer_data = serializer.data
+            else:
+                serializer_data = serializer.data[start:end]
+
+            if len(serializer_data)==0:
+                return Response({"message":"No Idea Found"}, status=status.HTTP_204_NO_CONTENT)   
+
+            for idea in serializer_data:
+                user = User.objects.get(id=idea['user_id'])
+                idea['username'] = user.username
+
+            return Response({"message":serializer_data}, status=status.HTTP_200_OK)
+        else:
+            return Response({"message":"Not an Admin"}, status=status.HTTP_403_FORBIDDEN)  
+
+
 
 # Get all Ideas (published, unpublished and rejected)
 class AllIdeasView(APIView):
@@ -224,12 +295,26 @@ class AllIdeasView(APIView):
         if user is None:
             return Response({"message":"User Already Logged Out"}, status=status.HTTP_403_FORBIDDEN)
 
+        offset = request.query_params.get('offset', None)
+        if offset!=None and offset!="":
+            offset = int(offset)
+            start = offset * 5
+            end = (offset + 1) * 5
+
         req_data = request.data
 
         if user.is_superuser==True:
             ideas = list(Idea.objects.all())
             serializer = IdeaSerializer(ideas, many=True)
-            serializer_data = serializer.data
+
+            if offset==None or offset=="":
+                serializer_data = serializer.data
+            else:
+                serializer_data = serializer.data[start:end]
+
+            if len(serializer_data)==0:
+                return Response({"message":"No Idea Found"}, status=status.HTTP_204_NO_CONTENT)   
+
             for idea in serializer_data:
                 user = User.objects.get(id=idea['user_id'])
                 idea['username'] = user.username
@@ -243,6 +328,12 @@ class SearchAllIdeaByContent(APIView):
 
     def get(self, request):
 
+        offset = request.query_params.get('offset', None)
+        if offset!=None and offset!="":
+            offset = int(offset)
+            start = offset * 5
+            end = (offset + 1) * 5
+
         text = request.query_params.get("text", None)
         print(text)
         all_ideas = list(Idea.objects.filter(Q(project_title__icontains=text) | Q(project_description__icontains=text)  | Q(tags__icontains=text)).all())
@@ -252,7 +343,14 @@ class SearchAllIdeaByContent(APIView):
             return Response({"message":"No Idea found"}, status=204)
 
         serializer = IdeaSerializer(search_result, many=True)
-        serializer_data = serializer.data
+
+        if offset==None or offset=="":
+            serializer_data = serializer.data
+        else:
+            serializer_data = serializer.data[start:end]
+
+        if len(serializer_data)==0:
+            return Response({"message":"No Idea Found"}, status=status.HTTP_204_NO_CONTENT)   
 
         return Response({"message":serializer_data}, status=status.HTTP_200_OK)
 

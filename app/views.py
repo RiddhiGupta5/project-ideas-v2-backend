@@ -24,20 +24,23 @@ from app.serializers import (
     SocialSerializer,
     UserSerializer,
     SocialMediaDetailsSerializer,
+    UserFCMDeviceSerializer,
 )
 
-from .models import User, UserToken, SocialMediaDetails
+from .models import User, UserToken, SocialMediaDetails, UserFCMDevice
 
 from .ideasView import (
     PostIdeaView,
     PublishedIdeasView,
     ViewIdea,
     SearchIdeaByContent,
+    UserIdeaView,
 )
 
 from .voteAndCommentViews import (
     VoteView,
     CommentView,
+    MyCommentsView,
 )
 
 load_dotenv()
@@ -272,7 +275,8 @@ class NormalLoginView(APIView):
                 token = get_token({
                     "username":user.username,
                     "platform":user.platform,
-                    "date_time":str(datetime.datetime.today())
+                    "date_time":str(datetime.datetime.today()),
+                    "email":user.email
                 })
                 try:
                     usertoken = UserToken.objects.get(user=user.id)
@@ -325,7 +329,7 @@ class LoginSignup(APIView):
         print(req_data)
         print("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$")
 
-        user = User.objects.filter(username=req_data.get('username', None))          
+        user = User.objects.filter(Q(username=req_data.get('username', None)) & Q(email=req_data.get('email', None)))          
         
         trial = UserSerializer(user, many=True)
         print(trial.data)
@@ -341,7 +345,8 @@ class LoginSignup(APIView):
                 token = get_token({
                     "username":user.username,
                     "platform":user.platform,
-                    "date_time":str(datetime.datetime.today())
+                    "date_time":str(datetime.datetime.today()),
+                    "email":user.email
                 })
                 req_data['email'] = user.email
                 req_data['token'] = token
@@ -378,7 +383,8 @@ class LoginSignup(APIView):
                 token = get_token({
                     "username":user.username,
                     "platform":user.platform,
-                    "date_time":str(datetime.datetime.today())
+                    "date_time":str(datetime.datetime.today()),
+                    "email":user.email
                 })
                 try:
                     usertoken = UserToken.objects.get(user=user.id)
@@ -405,4 +411,46 @@ class LoginSignup(APIView):
                     }})
             else:
                 print("Invalid password")
-                return Response({"message":"Invalid Password"}, status=status.HTTP_403_FORBIDDEN)              
+                return Response({"message":"Invalid Password"}, status=status.HTTP_403_FORBIDDEN)   
+
+
+# Register a new device to backend and store registration_id
+class FCMRegisterDeviceView(APIView):
+
+    # Register a new device (create new object)
+    def post(self, request):
+        req_data = request.data
+        token = request.headers.get('Authorization', None)
+        if token is None or token=="":
+            return Response({"message":"Authorization credentials missing"}, status=status.HTTP_403_FORBIDDEN)
+        
+        user = get_user(token)
+        if user is None:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+
+        req_data = {}
+        req_data['user_id'] = user.id
+        req_data["registration_id"] = request.data.get("registration_id", None)
+
+        if req_data["registration_id"]==None or req_data["registration_id"]=='':
+            return Response({"message":"Please Provide valid registration_id"}, status=status.HTTP_400_BAD_REQUEST)
+
+        userDevice = UserFCMDevice.objects.filter(user_id = req_data['user_id'])
+        if len(userDevice)!=0:
+            userDevice = userDevice[0]
+            userDevice.registration_id = req_data['registration_id']
+            userDevice.save()
+            return Response({"message":"Device details updated"}, status=status.HTTP_200_OK)
+        else:
+            data = {
+                "user_id":req_data['user_id'],
+                "registration_id":req_data['registration_id']
+            }
+            serializer = UserFCMDeviceSerializer(data=data)
+            if serializer.is_valid():
+                serializer.save()
+                return Response({"message":"Device Registered"}, status=status.HTTP_201_CREATED)
+            else:
+                return Response({"message":serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+
+           

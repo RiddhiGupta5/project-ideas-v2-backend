@@ -58,13 +58,37 @@ class VoteView(APIView):
             if check1 or check2:
                 return Response({"message":"You have already Voted"}, status=status.HTTP_400_BAD_REQUEST)
             else:
+                ## Patch for votes hack - [1UC1F3R616 26-08-2020] - PatchCode: Luci1
+
+                ##Patch Summary
+                # check1 and check2 above gives false is vote is above 1 but positive
+                # which means code is not break and vote is allowed.
+                # Code now passes to votes model and is getting added or subtracted
+                # with the value sended
+
+                ## Old code is commented below
+                # idea.votes = idea.votes + int(req_data['vote_type'])
+                # idea.save()
+                # vote.vote_type = req_data["vote_type"]
+                # vote.save()
+                # idea_serializer = IdeaSerializer(idea)
+                # return Response(status=status.HTTP_200_OK)
                 # Updating votes in idea as well as vote object
-                idea.votes = idea.votes + int(req_data['vote_type'])
-                idea.save()
-                vote.vote_type = req_data["vote_type"]
-                vote.save()
-                idea_serializer = IdeaSerializer(idea)
-                return Response(status=status.HTTP_200_OK)
+                if req_data['vote_type'] < 1:
+                    idea.votes = idea.votes  - 1
+                    idea.save()
+                    vote.vote_type = req_data["vote_type"]
+                    vote.save()
+                    idea_serializer = IdeaSerializer(idea)
+                    return Response(status=status.HTTP_200_OK)
+                elif req_data['vote_type'] >= 1:
+                    idea.votes = idea.votes + 1
+                    idea.save()
+                    vote.vote_type = req_data["vote_type"]
+                    vote.save()
+                    idea_serializer = IdeaSerializer(idea)
+                    return Response(status=status.HTTP_200_OK)
+
 
         except Vote.DoesNotExist:
             # Updating Votes for idea and creating a new idea object

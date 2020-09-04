@@ -10,11 +10,11 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/3.0/ref/settings/
 """
 
+import django_heroku
 import os
 from dotenv import load_dotenv
 load_dotenv()
 
-import django_heroku
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -28,7 +28,7 @@ PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
 SECRET_KEY = os.getenv('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
 ALLOWED_HOSTS = ['project-ideas-v2-backend.herokuapp.com']
 
@@ -48,7 +48,7 @@ INSTALLED_APPS = [
     'app',
     'adminApp',
     'corsheaders',
-    
+
     'oauth2_provider',
     'social_django',
     'rest_framework_social_oauth2',
@@ -57,9 +57,10 @@ INSTALLED_APPS = [
 ]
 
 REST_FRAMEWORK = {
-    
+
     'DEFAULT_AUTHENTICATION_CLASSES': (
-        'oauth2_provider.contrib.rest_framework.OAuth2Authentication',  # django-oauth-toolkit >= 1.0.0
+        # django-oauth-toolkit >= 1.0.0
+        'oauth2_provider.contrib.rest_framework.OAuth2Authentication',
         'rest_framework_social_oauth2.authentication.SocialAuthentication'
     ),
     'DEFAULT_THROTTLE_CLASSES': [
@@ -89,14 +90,15 @@ SOCIAL_AUTH_LOGIN_REDIRECT_URL = '/'
 # Define SOCIAL_AUTH_FACEBOOK_SCOPE to get extra permissions from facebook. Email is not sent by default, to get it, you must request the email permission:
 SOCIAL_AUTH_FACEBOOK_SCOPE = ['email']
 SOCIAL_AUTH_FACEBOOK_PROFILE_EXTRA_PARAMS = {
-'fields': 'id, name, email' }
+    'fields': 'id, name, email'}
 FACEBOOK_EXTENDED_PERMISSIONS = ['email', 'name']
 SOCIAL_AUTH_ADMIN_USER_SEARCH_FIELDS = ['username', 'first_name', 'email']
 SOCIAL_AUTH_USERNAME_IS_FULL_EMAIL = True
 
 # Google configuration
 SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = os.getenv('SOCIAL_AUTH_GOOGLE_OAUTH2_KEY')
-SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = os.getenv('SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET')
+SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = os.getenv(
+    'SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET')
 
 # Define SOCIAL_AUTH_GOOGLE_OAUTH2_SCOPE to get extra permissions from Google.
 SOCIAL_AUTH_GOOGLE_OAUTH2_SCOPE = [
@@ -127,7 +129,7 @@ SOCIAL_AUTH_PIPELINE = (
     'social_core.pipeline.user.create_user',
     'social_core.pipeline.social_auth.associate_user',
     'social_core.pipeline.social_auth.load_extra_data',
-    'social_core.pipeline.user.user_details', 
+    'social_core.pipeline.user.user_details',
 )
 
 ROOT_URLCONF = 'project_ideas.urls'
@@ -182,7 +184,6 @@ AUTH_PASSWORD_VALIDATORS = [
         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
     },
 ]
-
 
 
 # Internationalization

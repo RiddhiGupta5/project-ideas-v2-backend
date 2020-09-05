@@ -133,6 +133,7 @@ class SearchIdeaByContent(APIView):
         date = request.query_params.get("date", None)
         is_made_real = request.query_params.get("is_made_real", None)
         votes = request.query_params.get("votes", None)
+        sort = request.query_params.get("sort", None)
         print(text)
         all_ideas = Idea.objects.filter(
             Q(is_reviewed=keys['PUBLISHED']) & Q(is_deleted=False)).all()
@@ -151,11 +152,18 @@ class SearchIdeaByContent(APIView):
                 date_time__date=datetime.date(year, month, day))
         if is_made_real != None and is_made_real != "":
             all_ideas = all_ideas.filter(is_completed=is_made_real)
-        if votes != None and votes != "":
+        if (votes != None and votes != ""):
             if votes.lower() == "desc":
                 all_ideas = all_ideas.order_by('-votes')
             elif votes.lower() == "asc":
                 all_ideas = all_ideas.order_by('votes')
+        if sort != None and sort != "":
+            if sort.lower() == "new":
+                # Latest on top
+                all_ideas = all_ideas.order_by('-date_time')
+            elif sort.lower() == "old":
+                # Oldest on top
+                all_ideas = all_ideas.order_by('date_time')
 
         search_result = all_ideas
 
